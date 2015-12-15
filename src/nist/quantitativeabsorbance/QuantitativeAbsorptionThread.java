@@ -19,8 +19,7 @@ import org.micromanager.utils.MMScriptException;
 import clooj.indent__init;
 
 public class QuantitativeAbsorptionThread implements Runnable {
-	private ImagePlus AbsorbanceImage;
-	private ImageStats currentSample;
+	private ImagePlus currentSample;
 	private String sampleLabel;
 	private ScriptInterface app_ = AppParams.getApp_();
 	private CMMCore core_ = app_.getMMCore();
@@ -35,9 +34,13 @@ public class QuantitativeAbsorptionThread implements Runnable {
 	private DoubleVector channelExposure;
 	private DoubleVector channelOffset;
 	private int numChannels;
+	private int minExposure = (int) AppParams.getMinExposure();
+	private int maxExposure = (int) AppParams.getMaxExposure();
+	private int numReplicates = AppParams.getNumReplicates();
 	
     public void run() {
 		AppParams params = AppParams.getInstance();
+		SimpleCapture cap = new SimpleCapture(AppParams.getChannelImageDir(0));
 		
 		channelName = AppParams.getChannelName();
 		absorptionSetting = AppParams.getAbsorptionSetting();
@@ -82,15 +85,8 @@ public class QuantitativeAbsorptionThread implements Runnable {
 					}
 					sampleLabel = "Light off intensity";
 					AppParams.setCurrentSampleName(sampleLabel);
-					AppParams.setForceMax(true);
-					currentSample = new ImageStats();
-					AppParams.setDarkBlank(currentSample);
-					for (int j = 0; j<numChannels; j++) {
-						if (absorptionSetting.get(j).equals("Absorbance")){
-							checkAndSaveImages(j);
-						}
-					}
-					AppParams.setForceMax(false);
+					currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+					IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(0));
 				} else if (i==1) {
 					
 					if (AppParams.hasAutoShutter() && !AppParams.useAutoShutter()) {
@@ -108,20 +104,14 @@ public class QuantitativeAbsorptionThread implements Runnable {
 					if (numChannels>1) {
 						for (int j = 0; j<numChannels; j++) {
 							if (absorptionSetting.get(j).equals("Absorbance")){
-								//core_.setShutterOpen(false);
 								System.out.println(j);
 								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 								core_.waitForSystem();
-								//core_.setShutterOpen(true);
 								sampleLabel = channelName.get(j) + " - Light On Blank";
 								AppParams.setCurrentSampleName(sampleLabel);
-								//AppParams.setForceMax(false);
-								//Thread.sleep(100);
-								currentSample = new ImageStats();
-								currentSample.pixelLinReg(0, currentSample, AppParams.getDarkBlank());
-								AppParams.addLightBlank(currentSample);
-								checkAndSaveImages(j);
+								currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+								IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j));
 							}
 						}
 					}
@@ -140,46 +130,46 @@ public class QuantitativeAbsorptionThread implements Runnable {
 							JOptionPane.PLAIN_MESSAGE);
 						sampleLabel = "Sample #"+Integer.toString(i-1);
 					} else {
-						sampleLabel = platePl.getPosition(i-2).getLabel();
-						core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
-						core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
-						MultiStagePosition.goToPosition(platePl.getPosition(i-2), core_);
-						if (!core_.getShutterDevice().equals(AppParams.getTransmittedDevice())) {
-							core_.setShutterOpen(false);
-							core_.setShutterDevice(AppParams.getTransmittedShutter());
-							core_.setShutterOpen(true);
+						for (int j=0; j<absorptionSetting.size(); j++) {
+							if (absorptionSetting.get(j).equals("Fluorescence")) {
+								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
+								core_.setShutterOpen(false);
+								core_.setShutterDevice(AppParams.getFluorescentShutter());
+								break;
+							}
+							if (j==absorptionSetting.size()) {
+								core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
+								core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
+								core_.setShutterOpen(false);
+								core_.setShutterDevice(AppParams.getTransmittedShutter());
+							}
 						}
+						sampleLabel = platePl.getPosition(i-2).getLabel();
+						MultiStagePosition.goToPosition(platePl.getPosition(i-2), core_);
 						core_.waitForSystem();
+						core_.setShutterOpen(true);
 					}
 					
-					int k = 0;
 					for (int j = 0; j<numChannels; j++) {
 						AppParams.setCurrentSampleName(sampleLabel);
-						if (absorptionSetting.get(j).equals("Absorbance")){
-							//core_.setShutterOpen(false);
+						if (absorptionSetting.get(j).equals("Fluorescence")){
 							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 							core_.waitForSystem();
-							//core_.setShutterOpen(true);
-							//Thread.sleep(100);
-							currentSample = new ImageStats();
-							System.out.println(k);
-							currentSample.pixelLinReg(0, AppParams.getLightBlank(k), AppParams.getDarkBlank());
-							checkAndSaveImages(j);
-							AbsorbanceImage = new ImagePlus(channelName.get(j),currentSample.getAbsorbance(AppParams.getLightBlank(j)));
-							IJ.saveAsTiff(AbsorbanceImage, AppParams.getChannelImageDir(j) + sampleLabel);
-							k++;
+							currentSample = cap.singleCapture(sampleLabel, (int) channelExposure.get(j));
+							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						} else {
 							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 							core_.waitForSystem();
-							if (!core_.getShutterDevice().equals(AppParams.getFluorescentShutter())) {
+							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
 								core_.setShutterOpen(false);
-								core_.setShutterDevice(AppParams.getFluorescentShutter());
+								core_.setShutterDevice(AppParams.getTransmittedShutter());
 								core_.setShutterOpen(true);
 							}
-							ImagePlus fluorescentImage = capture(channelName.get(j), (int) channelExposure.get(j));
-							IJ.saveAsTiff(fluorescentImage, AppParams.getChannelImageDir(j) + sampleLabel);
+							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						}
 					}
 					AppParams.updateStatus(((double)(i-2))/((double) AppParams.getNumSamples()));
@@ -203,45 +193,5 @@ public class QuantitativeAbsorptionThread implements Runnable {
 			e.printStackTrace();
 		}
 	}
-    
-    public ImagePlus capture(String str, int exposure) {
 
-    	ImagePlus implus = new ImagePlus();
-    	double dExposure = (int) exposure;
-
-    	try {
-    		this.core_.setExposure(dExposure);
-    		this.core_.snapImage();
-    		Object pix = this.core_.getImage();
-    		implus = NewImage.createImage(str,
-    				(int) this.core_.getImageWidth(),
-    				(int) this.core_.getImageHeight(),
-    				1,
-    				16, 
-    				1);
-    		implus.getProcessor().setPixels(pix);
-    	} catch (Exception e) {
-    		// TODO Auto-generated catch block
-    		e.printStackTrace();
-    	}
-
-    	return implus;
-    }
-
-	private void checkAndSaveImages(int i) {
-		if (AppParams.isSaveMeanImages()) {
-			ImagePlus impMean = new ImagePlus(currentSample.getChannelLabel(0) + " Mean",currentSample.mean.get(0));
-			IJ.saveAsTiff(impMean, AppParams.getMeanImageDir(i) + sampleLabel + " - Mean");
-		}
-		
-		if (AppParams.isSaveVarianceImages()) {
-			ImagePlus impVar = new ImagePlus(currentSample.getChannelLabel(0) + " Variance",currentSample.deviation.get(0));
-			IJ.saveAsTiff(impVar, AppParams.getVarianceImageDir(i) + sampleLabel + " - Variance");
-		}
-		
-		if (AppParams.isLinearRegression()) {
-			ImagePlus absImage = currentSample.pixelLinReg(0, currentSample, AppParams.getDarkBlank());
-			IJ.saveAsTiff(absImage, AppParams.getLinearRegressionDir(i) + currentSample.getChannelLabel(0) + " - Linear Regression");
-		}
-	}
 }
