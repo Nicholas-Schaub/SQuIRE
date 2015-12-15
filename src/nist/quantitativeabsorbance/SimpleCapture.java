@@ -39,10 +39,11 @@ public class SimpleCapture {
 			int exposure = (int) Math.pow(2,i);
 			for (int j = 0; j<replicates; j++) {
 				singleImage = singleCapture(imgName + " - Exp " + Integer.toString(exposure) + "ms - Rep "+Integer.toString(j+1),exposure);
-				imageSeries.setPosition(1,i,j);
+				imageSeries.setPosition(1,i+1,j+1);
 				imageSeries.getProcessor().setPixels(singleImage.getProcessor().getPixels());
 			}
 		}
+		imageSeries.setPosition(1, 1, 1);
 		
 		return imageSeries;
 	}

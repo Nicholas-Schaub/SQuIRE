@@ -159,6 +159,17 @@ public class QuantitativeAbsorptionThread implements Runnable {
 							core_.waitForSystem();
 							currentSample = cap.singleCapture(sampleLabel, (int) channelExposure.get(j));
 							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
+						} else if (absorptionSetting.get(j).equals("Phase/DIC")) {
+							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
+							core_.waitForSystem();
+							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
+								core_.setShutterOpen(false);
+								core_.setShutterDevice(AppParams.getTransmittedShutter());
+								core_.setShutterOpen(true);
+							}
+							currentSample = cap.singleCapture(sampleLabel, (int) channelExposure.get(j));
+							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						} else {
 							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));

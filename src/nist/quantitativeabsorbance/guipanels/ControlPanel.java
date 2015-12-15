@@ -520,6 +520,7 @@ implements ActionListener
 		dtm.addRow(new Object[] {"","","","","","","",""});
 		JComboBox channelGroup = new JComboBox();
 		channelGroup.addItem("Absorbance");
+		channelGroup.addItem("Phase/DIC");
 		channelGroup.addItem("Fluorescence");
 		channelTypeEditor.add(new DefaultCellEditor(channelGroup));
 		StateDeviceBox fluorescentGroup = new StateDeviceBox();
