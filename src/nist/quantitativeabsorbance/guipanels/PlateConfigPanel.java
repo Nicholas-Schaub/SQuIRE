@@ -20,7 +20,6 @@ import javax.swing.border.LineBorder;
 import mmcorej.CMMCore;
 import nist.ij.log.Log;
 import nist.quantitativeabsorbance.AppParams;
-import nist.quantitativeabsorbance.NISTPlate;
 import nist.textfield.TextFieldInputPanel;
 import nist.textfield.validator.ValidatorDbl;
 import nist.textfield.validator.ValidatorInt;
