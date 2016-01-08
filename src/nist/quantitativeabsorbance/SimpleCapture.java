@@ -28,15 +28,15 @@ public class SimpleCapture {
 	}
 	
 	public ImagePlus powerCaptureSeries(String imgName, int start, int end, int replicates){
-		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, end-start+1, replicates, bitDepth); 
+		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, end-start+1, bitDepth); 
 		for (int i = start; i<=end; i++) {
 			int exposure = (int) Math.pow(2,i);
 			ImagePlus tempImage = seriesCapture(imgName,exposure,replicates);
 			for (int j = 1; j<=replicates; j++) {
-				imageSeries.setPosition(1,i+1,j);
-				tempImage.setPosition(1,1,j);
+				imageSeries.setPosition(1,j,i+1);
+				tempImage.setPosition(1,j,1);
 				imageSeries.getProcessor().setPixels(tempImage.getProcessor().getPixels());
-				imageSeries.getStack().setSliceLabel("Exposure: " + Integer.toString(exposure) + "ms Replicate: " + Integer.toString(j), imageSeries.getCurrentSlice());
+				imageSeries.getStack().setSliceLabel(Integer.toString(exposure), imageSeries.getCurrentSlice());
 			}
 		}
 		
@@ -47,7 +47,7 @@ public class SimpleCapture {
 	
 	public ImagePlus seriesCapture(String imgName, int exposure, int replicates) {
 		
-		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, 1, replicates, bitDepth);
+		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, 1, bitDepth);
 		double dExposure = (double) exposure;
 		
 		try {
@@ -67,7 +67,7 @@ public class SimpleCapture {
 			while ((i+core_.getRemainingImageCount())<=replicates) {
 				int remainingImages = core_.getRemainingImageCount();
 				for (int j = 0; j<remainingImages; j++) {
-					imageSeries.setPosition(1, 1, ++i);
+					imageSeries.setPosition(1, ++i, 1);
 					imageSeries.getProcessor().setPixels(core_.popNextImage());
 					imageSeries.setTitle(imgName);
 				}
@@ -82,7 +82,7 @@ public class SimpleCapture {
 			
 			for (i = 1; i<=replicates; i++) {
 				ImageStack tempStack = imageSeries.getStack();
-				tempStack.setSliceLabel("Exposure: " + Integer.toString(exposure) + "ms Replicate: " + Integer.toString(i), i);
+				tempStack.setSliceLabel(Integer.toString(exposure), i);
 			}
 			
 			if (!isLive) {
