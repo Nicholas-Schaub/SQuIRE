@@ -1,16 +1,14 @@
 package nist.quantitativeabsorbance;
 
 import java.awt.Color;
-import java.io.File;
-import java.util.ArrayList;
 
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
-import ij.gui.NewImage;
 import ij.gui.Plot;
 import ij.measure.CurveFitter;
 import ij.process.FloatProcessor;
+import ij.process.ImageProcessor;
 import mmcorej.CMMCore;
 
 //This class holds images representing the statistical information for each pixel collected
@@ -23,426 +21,494 @@ import mmcorej.CMMCore;
 // Will now save all raw images if specified in the Control Panel.
 public class ImageStats {
 
-	   // ArrayLists that hold individual channel information
-	   public ArrayList<ImageStack> mean;
-	   public ArrayList<ImageStack> deviation;
-	   public ArrayList<ImageStack> slopeStats;
-	   public ArrayList<ImagePlus> absorbance;
-	   public ArrayList<Float> averageIntercept;
-	   public ArrayList<Float> averageSlope;
-	   public ArrayList<Float> averageR;
-	   public ArrayList<double[]> exposureSet;
-	   public ArrayList<double[]> intensitySet;
-	   public ArrayList<double[]> deviationSet;
-	   public ArrayList<String> channelLabels;
-	   public ArrayList<ImageStack> imageStatsStack;
-	   public ArrayList<int[]> maxPixelIntensity;
-	   public ArrayList<int[]> minPixelIntensity;
-	   public ArrayList<int[]> maxPixelDeviation;
-	   public ArrayList<int[]> minPixelDeviation;
-	   
-	   public ImageStack channelAbsorption = null;
-	   
-	   // Basic image and capture settings.
-	   public String name = AppParams.getPlateID();
-	   public int width;
-	   public int height;
-	   public int bitdepth;
-	   public int imagebitdepth;
-	   public double minExposure = AppParams.getMinExposure();
-	   public int numReplicates = AppParams.getNumReplicates();
-	   public double maxExposure = AppParams.getMaxExposure();
+	// Images and stacks associated with pixel statistics
+	public ImageStack slopeStats;
+	public ImagePlus absorbance;
+	public ImageStack imageStatsStack;
+	public ImageStack channelAbsorption = null;
+	private ImagePlus meanImage;
+	private ImagePlus stdImage;
+	public ImagePlus rawImage;
 
-	   // Provides access to the Micro-Manager Core API (for direct hardware
-	   // control)
-	   private CMMCore core_;
+	// Variables for statistics
+	public float averageIntercept;
+	public float averageSlope;
+	public float averageR;
 
-	   public ImageStats() {
-		   this.name += "-"+AppParams.getCurrentSampleName();
-		   this.core_ = AppParams.getCore_();
-		   this.width = (int) core_.getImageWidth();
-		   this.height = (int) core_.getImageHeight();
-		   this.bitdepth = (int) core_.getImageBitDepth();
-		   
-		   if ((bitdepth == 12) || (bitdepth==14)) {imagebitdepth=16;} else {imagebitdepth=bitdepth;}
-		   
-		   this.mean = new ArrayList<ImageStack>();
-		   this.deviation = new ArrayList<ImageStack>();
-		   this.exposureSet = new ArrayList<double[]>();
-		   this.intensitySet = new ArrayList<double[]>();
-		   this.deviationSet = new ArrayList<double[]>();
-		   this.channelLabels = new ArrayList<String>();
-		   this.slopeStats = new ArrayList<ImageStack>();
-		   this.averageIntercept = new ArrayList<Float>();
-		   this.averageSlope = new ArrayList<Float>();
-		   this.averageR = new ArrayList<Float>();
-		   absorbance = new ArrayList<ImagePlus>();
-		   imageStatsStack= new ArrayList<ImageStack>();
-		   maxPixelIntensity = new ArrayList<int[]>();
-		   minPixelIntensity = new ArrayList<int[]>();
-		   maxPixelDeviation = new ArrayList<int[]>();
-		   minPixelDeviation = new ArrayList<int[]>();
-		   
-		   this.channelLabels.add(this.name);
-		   getPixelExposureStats(AppParams.getForceMax());
-	   }
-	   
-	   // Performs linear regression on all pixels in an image - Last edit -> NJS 2015-08-28
-	   public ImagePlus pixelLinReg(int imageChannel, ImageStats foreground, ImageStats background) {
-		   /*****************************************************************************************
-		    * This method performs a linear regression on the intensity of each pixel in an image   *
-		   	*	as a function of exposure time.														*
-		   	*																						*
-		   	* It is assumed that pixel intensities in an image near the pixel intensity values of	*
-		   	* 	the background are non-linear, and the same assumption about non-linearity is made	*
-		   	* 	about pixel intensity values in an image near the saturation point. To make sure	*
-		   	* 	that linear regression is performed on the linear section of the intensity/exposure	*
-		   	* 	function, intensity values that are within 3 standard deviations of the maximum or	*
-		   	* 	minimum values of pixel intensity are excluded from the regression					*
-		   	* 																						*
-		   	* Last Edit - Nick Schaub 2015-08-28													*
-		    *****************************************************************************************/
-		   
-		   ImagePlus imageStack = new ImagePlus(name + " Slope Image", this.mean.get(imageChannel));
-		   ImageStack slopeStats = new ImageStack(imageStack.getWidth(),imageStack.getHeight(),3);
-		   int zlen = imageStack.getStackSize();
-		   int forelen = foreground.maxPixelIntensity.get(imageChannel).length;
-		   double[] dIntensity = new double[zlen];
-		   double[] intensityFit;
-		   double[] exposureRange = this.getExposureRange(imageChannel);
-		   double[] exposureFit;
-		   int flen = imageStack.getWidth()*imageStack.getHeight();
-		   float[] cPixels = new float[flen]; //Holds pixel values of the image to perform regression on
-		   float[] bPixels = new float[flen]; //Holds pixel values of the background image
-		   float[] sPixels = new float[flen]; //Holds slope values
-		   float[] iPixels = new float[flen]; //Holds y-intercept values
-		   float[] rPixels = new float[flen]; //Holds r^2 values
-		   float aIntercept = 0F; //Holds the mean y-intercept value
-		   float aSlope = 0F; //Holds the mean slope value
-		   float aR = 0F; //Holds the mean R^2 value
-		   CurveFitter cf;
-		   double[] curveFitParams = new double[2];
-		   int j = 0;
-		   int k = 0;
-		   
-		   double maxValue = foreground.maxPixelIntensity.get(imageChannel)[forelen-1]-3*foreground.maxPixelDeviation.get(imageChannel)[forelen-1];
-		   double minValue = 3*background.maxPixelDeviation.get(imageChannel)[zlen-1];
-		   
-		   // This should loop should be optimized.
-		   for (int i=0; i<flen; i++) {
-			   dIntensity = new double[zlen];
-			   j = 0;
-			   k = 0;
-			   for (int m = 0; m<zlen; m++) {
-				   bPixels = (float[]) background.mean.get(imageChannel).getPixels(m+1);
-				   imageStack.setPosition(m+1);
-				   cPixels = (float[]) imageStack.getProcessor().getPixels();
-				   
-				   dIntensity[m] = (cPixels[i] - bPixels[i]);
-				   if (cPixels[i]>maxValue) {
-					   break;
-				   } else if (cPixels[i]<minValue) {
-					   k++;
-				   }
-				   j = m;
-			   }
-			   
-			   exposureFit = new double[j-k];
-			   intensityFit = new double[j-k];
-			   
-			   for (int l=0; l<(j-k); l++) {
-				   exposureFit[l] = exposureRange[l+k];
-				   intensityFit[l] = dIntensity[l+k];
-			   }
-			   
-			   cf = new CurveFitter(exposureFit,intensityFit);
-			   cf.doFit(0);
-			   curveFitParams = cf.getParams();
-			   iPixels[i] = (float) curveFitParams[0];
-			   sPixels[i] = (float) curveFitParams[1];
-			   rPixels[i] = (float) cf.getRSquared();
-			   
-			   aIntercept += iPixels[i]/flen;
-			   aSlope += sPixels[i]/flen;
-			   aR += rPixels[i]/flen;
-		   }
-		   
-		   slopeStats.setSliceLabel("Y-Intercept", 1);
-		   slopeStats.setPixels(iPixels, 1);
-		   
-		   slopeStats.setSliceLabel("Slope", 2);
-		   slopeStats.setPixels(sPixels, 2);
-		   
-		   slopeStats.setSliceLabel("R^2", 3);
-		   slopeStats.setPixels(rPixels, 3);
-		   
-		   this.slopeStats.add(imageChannel, slopeStats);
-		   this.averageIntercept.add(imageChannel, aIntercept);
-		   this.averageSlope.add(imageChannel, aSlope);
-		   this.averageR.add(imageChannel, aR);
-		   
-		   return new ImagePlus(this.name + this.channelLabels + " Slope Stats", slopeStats);
+	// Variables for plotting global statistics
+	public float[] exposureSet;
+	public float[] intensitySet;
+	public float[] deviationSet;
+	public float[] maxPixelIntensity;
+	public float[] minPixelIntensity;
+	public float[] maxPixelDeviation;
+	public float[] minPixelDeviation;
 
-	   }
+	// Basic image and capture settings.
+	public String name;
+	public String channelLabel;
+	public int width;
+	public int height;
+	public int bitdepth;
+	public int imagebitdepth;
+	private double minExposure = AppParams.getMinExposure();
+	private int numReplicates = AppParams.getNumReplicates();
+	private double maxExposure = AppParams.getMaxExposure();
+	public final int nFrames;
+	public final int nSlices;
+	public final int nChannels;
 
-	   public Float getAverageSlope(int channel) {return this.averageSlope.get(channel);}
-	   
-	   public Float getAverageR(int channel) {return this.averageR.get(channel);}
-	   
-	   public Float getAverageIntercept(int channel) {return this.averageIntercept.get(channel);}
-	   
-	   // Gets Absorption values from linear regression - Last edit -> NJS 2015-08-28
-	   public ImageStack getAbsorbance(ImageStats foreground) {
-		   /*****************************************************************************************
-		    * This method performs determines the amount of absorption at each pixel for every		*
-		    * 	channel in an image. An absorption value is obtained using the a blank foreground	*
-		    * 	image using the normal formula for absorption -log(I/I0).							*
-		   	* 																						*
-		   	* Last Edit - Nick Schaub 2015-08-28													*
-		    *****************************************************************************************/
-		   
-		   ImageStack slopeForeground = null;
-		   ImageStack slopeSample;
-		   FloatProcessor imageHolder = new FloatProcessor(width,height);
-		   float[] fpixels;
-		   float[] spixels;
-		   float[] apixels;
-		   int flen = foreground.width*foreground.height;
-		   this.channelAbsorption = new ImageStack(foreground.width, foreground.height);
-		   
-		   slopeForeground = foreground.getSlopeImage(0);
-		   slopeSample = this.getSlopeImage(0);
+	// Provides access to the Micro-Manager Core API (for direct hardware
+	// control)
+	private CMMCore core_;
 
-		   fpixels = (float[]) slopeForeground.getPixels(2);
-		   spixels = (float[]) slopeSample.getPixels(2);
-		   apixels = new float[flen];
+	// Call this function to perform statistics on an ImagePlus object.
+	public ImageStats(ImagePlus imp) {
+		this("", "");
+		rawImage = imp;
+	}
+	
+	// Direct calls to this instantiation is reserved for benchmarking cameras.
+	protected ImageStats(String sample, String channel) {
+		// Sample/channel label
+		name = sample;
+		channelLabel = channel;
 
-		   for (int j=0; j<flen; j++) {
-			   apixels[j] = (float) -Math.log10(spixels[j]/fpixels[j]);
-		   }
+		// Core and image attributes
+		core_ = AppParams.getCore_();
+		width = (int) core_.getImageWidth();
+		height = (int) core_.getImageHeight();
+		bitdepth = (int) core_.getImageBitDepth();
 
-		   imageHolder.setPixels(apixels);
+		// Make sure the bit depth is something ImageJ can handle
+		if ((bitdepth == 12) || (bitdepth==14)) {imagebitdepth=16;} else {imagebitdepth=bitdepth;}
+		
+		if (rawImage==null) {
+			System.out.println("Running statistics...");
+			getPixelExposureStats(AppParams.getForceMax());
+		}
+		nFrames = rawImage.getNFrames();
+		nSlices = rawImage.getNSlices();
+		nChannels = rawImage.getNChannels();
+	}
 
-		   this.channelAbsorption.addSlice(this.channelLabels.get(0),imageHolder,0);
-		   
-		   return this.channelAbsorption;
-	   }
-	   
-	   // Captures multiple images at various exposures and gets stats for each pixel (mean, std).
-	   public void getPixelExposureStats(boolean forceMax) {
-		   
-		  //This code was written to be functional, and can probably be optimized.
-		   
-	      float oldDeviation = 1;
-	      float newDeviation = 2;
-		   
-	      ImagePlus imstackTemp = IJ.createHyperStack("", width, height, 1, 40, numReplicates, imagebitdepth);
-	      ImagePlus imcaptureTemp = IJ.createImage("", width, height, 1, imagebitdepth);
-	      ImageStack imMean = ImageStack.create(width, height, 1, imagebitdepth);
-	      ImageStack imDeviation = ImageStack.create(width, height, 1, imagebitdepth);
-	      
-	      FloatProcessor imageHolder = new FloatProcessor(width,height);
-	      float[] fpixelmean = (float[]) imageHolder.getPixels();
-	      float[] fpixeldeviation = fpixelmean;
-	      float[] tpixel = fpixelmean;
-	      int flen = fpixelmean.length;
-		  
-	      if (AppParams.hasAutoShutter() && AppParams.useAutoShutter() && !forceMax) {
-			  try {
+	// Performs linear regression on all pixels in an image - Last edit -> NJS 2015-08-28
+	public ImagePlus pixelLinReg(ImageStats foreground, ImageStats background) {
+		/*****************************************************************************************
+		 * This method performs a linear regression on the intensity of each pixel in an image   *
+		 *	as a function of exposure time.														*
+		 *																						*
+		 * It is assumed that pixel intensities in an image near the pixel intensity values of	*
+		 * 	the background are non-linear, and the same assumption about non-linearity is made	*
+		 * 	about pixel intensity values in an image near the saturation point. To make sure	*
+		 * 	that linear regression is performed on the linear section of the intensity/exposure	*
+		 * 	function, intensity values that are within 3 standard deviations of the maximum or	*
+		 * 	minimum values of pixel intensity are excluded from the regression					*
+		 * 																						*
+		 * Last Edit - Nick Schaub 2015-08-28													*
+		 *****************************************************************************************/
+		if (nFrames<=1) {
+			IJ.error("nFrames<=1, so I can't perform a linear regression.");
+			return new ImagePlus();
+		}
+		
+		if (background.meanImage.getNSlices()<nFrames) {
+			background.getFrameDeviation();
+			if (background.meanImage.getNSlices()<nFrames) {
+				IJ.error("Background frames smaller than image frames. \n Need more background frames for linear regression.");
+				return new ImagePlus();
+			}
+		}
+		
+		if (meanImage==null || meanImage.getStackSize()<nFrames) {
+			getFrameDeviationAndMean(rawImage);
+		}
+		
+		ImageStack slopeStats = new ImageStack(width,height,3);
+		int zlen = meanImage.getStackSize();
+		int forelen = foreground.intensitySet.length;
+		int backlen = background.intensitySet.length;
+		float[] dIntensity = new float[zlen];
+		double[] intensityFit;
+		float[] exposureRange = this.getExposureRange();
+		double[] exposureFit;
+		int flen = width*height;
+		float[] cPixels = new float[flen]; //Holds pixel values of the image to perform regression on
+		float[] bPixels = new float[flen]; //Holds pixel values of the background image
+		float[] sPixels = new float[flen]; //Holds slope values
+		float[] iPixels = new float[flen]; //Holds y-intercept values
+		float[] rPixels = new float[flen]; //Holds r^2 values
+		float aIntercept = 0F; //Holds the mean y-intercept value
+		float aSlope = 0F; //Holds the mean slope value
+		float aR = 0F; //Holds the mean R^2 value
+		CurveFitter cf;
+		double[] curveFitParams = new double[2];
+		int j = 0;
+		int k = 0;
+		float[] poisson = pseudoPoisson();
+
+		// Determine the range of values accepted for linear regression
+		double maxValue = foreground.maxPixelIntensity[forelen-1] * (1-3*poisson[1]);
+		double minValue = background.maxPixelIntensity[backlen-1] * (1+3*poisson[2]);
+		
+		IJ.log("Y-intercept: " + Double.toString(poisson[0]));
+		IJ.log("Slope: " + Double.toString(poisson[1]));
+		IJ.log("R^2: " + Double.toString(poisson[2]));
+
+		// This should loop should be optimized.
+		for (int i=0; i<flen; i++) {
+			dIntensity = new float[zlen];
+			j = 0;
+			k = 0;
+			for (int m = 0; m<zlen; m++) {
+				background.meanImage.setPosition(m+1);
+				meanImage.setPosition(m+1);
+				bPixels = (float[]) background.meanImage.getProcessor().getPixels();
+				cPixels = (float[]) meanImage.getProcessor().getPixels();
+
+				dIntensity[m] = (cPixels[i] - bPixels[i]);
+				if (cPixels[i]>maxValue) {
+					break;
+				} else if (cPixels[i]<minValue) {
+					k++;
+				}
+				j = m;
+			}
+			
+			if (j<k) {
+				IJ.log("Error in linear regression bounds estimation.\n" +
+						"This probably means the frames aren't in order of increasing exposure, \n" +
+						"or the background signal distribution overlaps the foreground signal distribution.");
+				IJ.log("Maximum foreground intensity: " + Float.toString(foreground.maxPixelIntensity[forelen-1]));
+				IJ.log("Maximum background intensity: " + Float.toString(background.maxPixelIntensity[forelen-1]));
+				IJ.log("Upper Intensity Bound: " + Double.toString(maxValue));
+				IJ.log("Lower Intesity Bound: " + Double.toString(minValue));
+			}
+			
+			exposureFit = new double[j-k];
+			intensityFit = new double[j-k];
+
+			for (int l=0; l<(j-k); l++) {
+				exposureFit[l] = exposureRange[l+k];
+				intensityFit[l] = dIntensity[l+k];
+			}
+
+			cf = new CurveFitter(exposureFit,intensityFit);
+			cf.doFit(0);
+			curveFitParams = cf.getParams();
+			iPixels[i] = (float) curveFitParams[0];
+			sPixels[i] = (float) curveFitParams[1];
+			rPixels[i] = (float) cf.getRSquared();
+
+			aIntercept += iPixels[i]/flen;
+			aSlope += sPixels[i]/flen;
+			aR += rPixels[i]/flen;
+		}
+
+		slopeStats.setSliceLabel("Y-Intercept", 1);
+		slopeStats.setPixels(iPixels, 1);
+
+		slopeStats.setSliceLabel("Slope", 2);
+		slopeStats.setPixels(sPixels, 2);
+
+		slopeStats.setSliceLabel("R^2", 3);
+		slopeStats.setPixels(rPixels, 3);
+
+		this.slopeStats = slopeStats;
+		this.averageIntercept = aIntercept;
+		this.averageSlope = aSlope;
+		this.averageR = aR;
+
+		return new ImagePlus(this.name + this.channelLabel + " Slope Stats", slopeStats);
+
+	}
+
+	public Float getAverageSlope(int channel) {return averageSlope;}
+
+	public Float getAverageR(int channel) {return averageR;}
+
+	public Float getAverageIntercept(int channel) {return averageIntercept;}
+
+	// Gets Absorption values from linear regression - Last edit -> NJS 2015-08-28
+	public ImageStack getAbsorbance(ImageStats foreground) {
+		/*****************************************************************************************
+		 * This method performs determines the amount of absorption at each pixel for every		*
+		 * 	channel in an image. An absorption value is obtained using the a blank foreground	*
+		 * 	image using the normal formula for absorption -log(I/I0).							*
+		 * 																						*
+		 * Last Edit - Nick Schaub 2015-08-28													*
+		 *****************************************************************************************/
+
+		ImageStack slopeForeground = null;
+		ImageStack slopeSample;
+		FloatProcessor imageHolder = new FloatProcessor(width,height);
+		float[] fpixels;
+		float[] spixels;
+		float[] apixels;
+		int flen = foreground.width*foreground.height;
+		this.channelAbsorption = new ImageStack(foreground.width, foreground.height);
+
+		slopeForeground = foreground.getSlopeImage(0);
+		slopeSample = this.getSlopeImage(0);
+
+		fpixels = (float[]) slopeForeground.getPixels(2);
+		spixels = (float[]) slopeSample.getPixels(2);
+		apixels = new float[flen];
+
+		for (int j=0; j<flen; j++) {
+			apixels[j] = (float) -Math.log10(spixels[j]/fpixels[j]);
+		}
+
+		imageHolder.setPixels(apixels);
+
+		this.channelAbsorption.addSlice(channelLabel,imageHolder,0);
+
+		return this.channelAbsorption;
+	}
+
+	// Captures multiple images at various exposures and gets stats for each pixel (mean, std).
+	private void getPixelExposureStats(boolean forceMax) {
+
+		// Create object to handle the camera. This object is optimized to capture images at
+		//	the fastest possible rate by the camera.
+		SimpleCapture cap = new SimpleCapture(false);
+		float oldDeviation = 0;
+		float newDeviation = 0;
+
+		// Images to temporarily hold captured or processed images.
+		ImagePlus imstackTemp = IJ.createHyperStack("", width, height, 1, numReplicates, 40, imagebitdepth);
+		ImagePlus imcaptureTemp = IJ.createImage("", width, height, 1, imagebitdepth);
+		ImageStack meanStack = new ImageStack(width,height);
+		ImageStack stdStack = new ImageStack(width,height);
+
+		if (AppParams.hasAutoShutter() && AppParams.useAutoShutter() && !forceMax) {
+			try {
 				core_.setShutterOpen(true);
 				Thread.sleep(100);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		  }
-	      
-    	  for (int i = 1; i<=40; i++) {
-    		  
-    		  //Capture numaverage+1 images. This appears to be required since there may be a bug
-    		  //	that prevents the appropriate number of images being saved to an ImagePlus
-    		  //	hyperstack.
-    		  
-    		  for (int j=1; j!=(numReplicates+1); j++) {
-    			  int exp = (int) (minExposure*Math.pow(2, i-1));
-    			  imcaptureTemp = capture("Exposure " + Double.toString(minExposure * Math.pow(2, i)) + "ms - Capture " + Integer.toString(j),exp);
-    			  
-    			  // Saves every image capture if the control panel indicates "Save Raw Images"
-    			  /*if (AppParams.isSaveRawImages()) {
-    				  IJ.saveAsTiff(imcaptureTemp,
-    					  AppParams.getOutDir()+"Raw Images"+File.separator+AppParams.getCurrentSampleName()+"-Exp"+Integer.toString(exp)+"-Rep"+Integer.toString(j));
-    			  }*/
-    			  
-    			  imstackTemp.setPosition(1,i,j);
-				  imstackTemp.getProcessor().setPixels(imcaptureTemp.getProcessor().getPixels());
-    		  }
-    		  
-    		  //This section calculates the average of the replicates and the corresponding deviation
-    		  //	at each pixel.
-			  fpixelmean = new float[flen];
-			  fpixeldeviation = new float[flen];
-    		  for (int j=1; j!=(numReplicates+1); j++) { //loop to calculate the mean
-    			  imstackTemp.setPosition(1,i,j);
-    			  tpixel = (float[]) imstackTemp.getProcessor().convertToFloat().getPixels();
-    			  for (int k=0; k<flen; k++) {
-    				  fpixelmean[k] += (tpixel[k] / ((float) numReplicates));
-    			  }
-    		  }
-    		  
-    		  for (int j=1; j!=(numReplicates+1); j++) { //loop to calculate the deviation
-    			  imstackTemp.setPosition(1,i,j);
-    			  tpixel = (float[]) imstackTemp.getProcessor().convertToFloat().getPixels();
-    			  for (int k=0; k<flen; k++) {
-    				  fpixeldeviation[k] += Math.abs(tpixel[k] - fpixelmean[k]) / ((float) numReplicates);
-    			  }
-    		  }
-    		  
-    		  imageHolder.setPixels(fpixelmean);
-    		  imMean.addSlice(Integer.toString((int) (minExposure*Math.pow(2, i-1))),imageHolder,i-1);
-    		  
-    		  imageHolder.setPixels(fpixeldeviation);
-    		  imDeviation.addSlice(Integer.toString((int) (minExposure*Math.pow(2, i-1))),imageHolder,i-1);
-    	      
-    	      newDeviation = 0;
-    	      for (int j = 0; j<flen; j++) newDeviation += fpixeldeviation[j] / ((float) flen);
-    	      
-    	      if (forceMax) {
-    	    	  if (minExposure*Math.pow(2, i)>maxExposure) {
-    	    		  break;
-    	    	  }
-	    	  } else if ((minExposure*Math.pow(2, i))>maxExposure) {
-    	    	  break;
-    	      } else if (oldDeviation<newDeviation) {
-    	    	  oldDeviation = newDeviation;
-    	      } else {
-    	    	  break;
-    	      }
-    	      
-    	  }
-    	  
-		  if (AppParams.hasAutoShutter() && AppParams.useAutoShutter() && !forceMax) {
-			  try {
+		}
+
+		for (int i = 1; i<=40; i++) {
+
+			//Capture images.
+			int exp = (int) (minExposure*Math.pow(2, i-1));
+			imcaptureTemp = cap.seriesCapture("Exposure " + Double.toString(minExposure * Math.pow(2, i)), exp, numReplicates);
+			
+			for (int j=1; j<=(numReplicates); j++) {
+				imstackTemp.setPosition(1,j,i);
+				imstackTemp.getProcessor().setPixels(imcaptureTemp.getProcessor().getPixels());
+			}
+
+			//This section calculates the average of the replicates and the corresponding deviation
+			//	at each pixel.
+			stdStack.addSlice(Integer.toString(exp),
+					getFrameDeviationAndMean(imcaptureTemp).getProcessor(),
+					i-1);
+			meanStack.addSlice(Integer.toString(exp),
+					meanImage.getProcessor(),
+					i-1);
+
+			oldDeviation = newDeviation;
+			newDeviation = getDeviationImageMean(stdImage.getProcessor());
+
+			if (forceMax) {
+				if (minExposure*Math.pow(2, i)>maxExposure) {
+					break;
+				}
+			} else if ((minExposure*Math.pow(2, i))>maxExposure) {
+				break;
+			} else if (oldDeviation>newDeviation && i>1) {
+				break;
+			}
+
+		}
+
+		if (AppParams.hasAutoShutter() && AppParams.useAutoShutter() && !forceMax) {
+			try {
 				core_.setShutterOpen(false);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		  }
-    	  
-    	  imMean.deleteLastSlice();
-    	  imDeviation.deleteLastSlice();
-    	  
-    	  ImagePlus imMeanStats = new ImagePlus(this.channelLabels.get(this.channelLabels.size()-1) + " Mean",imMean);
-    	  ImagePlus imDeviationStats = new ImagePlus(this.channelLabels.get(this.channelLabels.size()-1) + " Standard Deviation",imDeviation);
-    	  
-    	  double[] meanSet = new double[imMean.getSize()];
-    	  double[] deviationSet = new double[imMean.getSize()];
-    	  double[] exposureSet = new double[imMean.getSize()]; //get range of exposure values and image mean pixel intensities
-    	  int[] max = new int[imMean.getSize()];
-    	  int[] min = new int[imMean.getSize()];
-    	  int[] maxDeviation = new int[imMean.getSize()];
-    	  int[] minDeviation = new int[imMean.getSize()];
-    	  
-    	  for (int i=0; i<imMean.getSize(); i++) {
-    		  exposureSet[i] = (minExposure*Math.pow(2, i));
-    		  imMeanStats.setPosition(i+1);
-    		  meanSet[i] = imMeanStats.getStatistics().mean;
-    		  deviationSet[i] = imMeanStats.getStatistics().stdDev;
-    		  max[i] = (int) imMeanStats.getStatistics().max;
-    		  min[i] = (int) imMeanStats.getStatistics().min;
-    		  maxDeviation[i] = (int) imDeviationStats.getStatistics().max;
-    		  minDeviation[i] = (int) imDeviationStats.getStatistics().min;
-    	  }
-		  
-    	  this.maxPixelIntensity.add(max);
-    	  this.minPixelIntensity.add(min);
-    	  this.maxPixelDeviation.add(maxDeviation);
-    	  this.minPixelDeviation.add(minDeviation);
-    	  this.mean.add(imMean);
-    	  this.deviation.add(imDeviation);
-    	  this.exposureSet.add(exposureSet);
-    	  this.intensitySet.add(meanSet);
-    	  this.deviationSet.add(deviationSet);
-    	  
-    	  
-	   }
-	   
-	   // Captures a single image and returns an ImagePlus image.
-	   public ImagePlus capture(String str, int exposure) {
-			
-		   ImagePlus implus = new ImagePlus();
-		   double dExposure = (int) exposure;
+		}
+		
+		ImagePlus imMeanStats = new ImagePlus(channelLabel + " Mean",meanStack);
+		ImagePlus imDeviationStats = new ImagePlus(channelLabel + " Standard Deviation",stdStack);
+		int frames = imMeanStats.getNSlices();
+
+		intensitySet = new float[frames];
+		deviationSet = new float[frames];
+		exposureSet = new float[frames]; //get range of exposure values and image mean pixel intensities
+		maxPixelIntensity = new float[frames];
+		minPixelIntensity = new float[frames];
+		rawImage = IJ.createHyperStack(name+channelLabel, width, height, 1, numReplicates, frames, imagebitdepth);
+
+		for (int i=0; i<frames; i++) {
+			exposureSet[i] = (float) (minExposure*Math.pow(2, i));
+			int exposure = (int) (exposureSet[i]);
+			imMeanStats.setPosition(i+1);
+			imDeviationStats.setPosition(i+1);
+			intensitySet[i] = getMeanImageMean(imMeanStats.getProcessor());
+			deviationSet[i] = getDeviationImageMean(imDeviationStats.getProcessor());
+			maxPixelIntensity[i] = (float) imMeanStats.getStatistics().max;
+			minPixelIntensity[i] = (float) imMeanStats.getStatistics().min;
+			for (int j = 0; j<numReplicates; j++) {
+				rawImage.setPosition(1,j+1,i+1);
+				imstackTemp.setPosition(1,j+1,i+1);
+				rawImage.setProcessor(imstackTemp.getProcessor());
+				rawImage.getStack().setSliceLabel(Integer.toString(exposure), rawImage.getCurrentSlice());
+			}
+		}
+	}
+
+	// Create and return a plot of global pixel intensity versus exposure
+	public Plot plotGlobalIntensity() {
+		Plot intensityPlot = new Plot(getChannelLabel(),"Exposure time (ms)","Intensity");
+		float[] exposureRange = getExposureRange();
+		float[] intensityRange = getGlobalIntensity();
+		intensityPlot.setLimits(0, exposureRange[exposureRange.length-1]*1.25, 0, intensityRange[intensityRange.length-1]*1.25);
+		intensityPlot.setColor(Color.RED);
+		intensityPlot.addPoints(exposureRange,intensityRange, Plot.CROSS);
+		return intensityPlot;
+	}
+
+	// Create and return a plot of global pixel deviation versus exposure
+	public Plot plotGlobalDeviation() {
+		Plot deviationPlot = new Plot(getChannelLabel(),"Exposure time (ms)","Deviation",getExposureRange(),getDeviationSet());
+		return deviationPlot;
+	}
+
+	private float getMeanImageMean(ImageProcessor imp) {
+		float fMean = 0;
+		float[] fMeanPixels = (float[]) imp.getPixels();
+		
+		for (int i = 0; i<fMeanPixels.length; i++) {
+			fMean += fMeanPixels[i];
+		}
+		fMean /= fMeanPixels.length;
+		
+		return fMean;
+	}
 	
-		   try {
-			   this.core_.setExposure(dExposure);
-			   this.core_.snapImage();
-			   Object pix = this.core_.getImage();
-			   implus = NewImage.createImage(str,
-					   (int) this.core_.getImageWidth(),
-					   (int) this.core_.getImageHeight(),
-					   1,
-					   16, 
-					   1);
-			   implus.getProcessor().setPixels(pix);
-		   } catch (Exception e) {
-			   // TODO Auto-generated catch block
-			   e.printStackTrace();
-		   }
-		   
-		   return implus;
-	   }
-   
-	   // Create and return a plot of global pixel intensity versus exposure
-	   public Plot plotGlobalIntensity(int channel) {
-		   Plot intensityPlot = new Plot(this.getChannelLabel(channel),"Exposure time (ms)","Intensity");
-		   double[] exposureRange = this.getExposureRange(channel);
-		   double[] intensityRange = this.getGlobalIntensity(channel);
-		   double[] deviationRange = this.getDeviationSet(channel);
-		   intensityPlot.setLimits(0, exposureRange[exposureRange.length-1]*1.25, 0, intensityRange[intensityRange.length-1]*1.25);
-		   intensityPlot.setColor(Color.RED);
-		   intensityPlot.addPoints(exposureRange,intensityRange, deviationRange, Plot.CROSS);
-		   return intensityPlot;
-	   }
-	   
-	   // Create and return a plot of global pixel deviation versus exposure
-	   public Plot plotGlobalDeviation(int channel) {
-		   Plot deviationPlot = new Plot(this.getChannelLabel(channel),"Exposure time (ms)","Deviation",this.getExposureRange(channel),this.getDeviationSet(channel));
-		   return deviationPlot;
-	   }
-	   
-	   
-	   public ImageStack getMeanImageStack(int channel) {
-		   return mean.get(channel);
-	   }
-	   
-	   public ImageStack getDeviationImageStack(int channel) {
-		   return deviation.get(channel);
-	   }
-	   
-	   public String getName() {
-		   return name;
-	   }
+	private float getDeviationImageMean(ImageProcessor imp) {
+		float fDeviation = 0;
+		float[] fDeviationPixels = (float[]) imp.getPixels();
+		
+		for (int i = 0; i<fDeviationPixels.length; i++) {
+			fDeviation += fDeviationPixels[i]*fDeviationPixels[i];
+		}
+		fDeviation /= fDeviationPixels.length;
+		fDeviation = (float) Math.sqrt(fDeviation);
+		
+		return fDeviation;
+	}
+	
+	private ImagePlus getFrameDeviationAndMean(ImagePlus imp) {
+		
 
-	   public String getChannelLabel(int channel) {
-		   return channelLabels.get(channel);
-	   }
-	   
-	   public double[] getExposureRange(int channel) {
-		   return exposureSet.get(channel);
-	   }
+		stdImage = new ImagePlus();
+		int frames = imp.getNFrames();
+		meanImage = IJ.createImage("", width, height, frames, 32);
+		ImageStack meanStack = ImageStack.create(width,height,frames,32);
+		meanStack = meanStack.convertToFloat();
+		ImageStack stdStack = new ImageStack(width,height);
+		
+		int flen = width*height;
 
-	   public double[] getGlobalIntensity(int channel) {
-		   return intensitySet.get(channel);
-	   }
-	   
-	   // This method returns the global deviation values at each exposure for the indicated channel.
-	   public double[] getDeviationSet(int channel) {
-		   return deviationSet.get(channel);
-	   }
-	   
-	   // This method returns the ImageStack containing the results of the linear regression for the indicated channel.
-	   public ImageStack getSlopeImage(int channel) {
-		   return this.slopeStats.get(channel);
-	   }
+		for (int i=1; i<=frames; i++) {
+			float[] tpixel = new float[flen];
+			float[] fpixelmean = new float[flen];
+			float[] fpixeldeviation = new float[flen];
+			for (int j=1; j<=(numReplicates); j++) { //loop to calculate the mean
+				imp.setPosition(1,j,i);
+				tpixel = (float[]) imp.getProcessor().convertToFloat().getPixels();
+				for (int k=0; k<flen; k++) {
+					fpixeldeviation[k] += tpixel[k]*tpixel[k];
+					fpixelmean[k] += tpixel[k];
+				}
+			}
+
+			for (int j = 0; j<flen; j++) {
+				fpixelmean[j] /= (float) numReplicates;
+				fpixeldeviation[j] /= (float) numReplicates;
+				fpixeldeviation[j] = (float) Math.sqrt(fpixeldeviation[j] - fpixelmean[j]*fpixelmean[j]);
+			}
+			stdStack.addSlice(imp.getImageStack().getSliceLabel(imp.getCurrentSlice()),
+					new FloatProcessor(width,height,fpixeldeviation),
+					i-1);
+			
+			meanImage.setPosition(i);
+			meanImage.getProcessor().setPixels(fpixelmean);
+		}
+
+		stdImage = new ImagePlus("",stdStack.convertToFloat());
+		
+		IJ.saveAsTiff(meanImage, AppParams.getCoreSaveDir()+"MeanImage");
+
+		return stdImage;
+	}
+	
+	public ImagePlus getFrameDeviation() {
+		if (stdImage!=null && stdImage.getNFrames()==nFrames) {
+			return stdImage;
+		}
+		return getFrameDeviationAndMean(rawImage);
+	}
+
+	public ImagePlus getFrameMean() {
+		if (meanImage!=null && meanImage.getNFrames()==nFrames) {
+			return meanImage;
+		}
+		getFrameDeviationAndMean(rawImage);
+		return meanImage;
+	}
+
+	public String getName() {return name;}
+
+	private String getChannelLabel() {return channelLabel;}
+
+	private float[] getExposureRange() {return exposureSet;}
+
+	public float[] getGlobalIntensity() {return intensitySet;}
+
+	// This method returns the global deviation values at each exposure for the indicated channel.
+	public float[] getDeviationSet() {return deviationSet;}
+
+	// This method returns the ImageStack containing the results of the linear regression for the indicated channel.
+	public ImageStack getSlopeImage(int channel) {
+		return slopeStats;
+	}
+	
+	public float[] pseudoPoisson() {
+		if (meanImage==null || meanImage.getNSlices()!=nFrames) {
+			getFrameDeviationAndMean(rawImage);
+		}
+		int len = width*height;
+		int vol = len*(nFrames-1);
+		float[] iPixels = new float[len];
+		float[] dPixels = new float[len];
+		double[] iRegPixels = new double[vol];
+		double[] dRegPixels = new double[vol];
+		for (int i=1;i<=nFrames-1;i++) {
+			meanImage.setPosition(i);
+			stdImage.setPosition(i);
+			iPixels = (float[]) meanImage.getProcessor().getPixels();
+			dPixels = (float[]) stdImage.getProcessor().getPixels();
+			for (int j=0;j<len;j++) {
+				iRegPixels[(i-1)*len+j] = iPixels[j];
+				dRegPixels[(i-1)*len+j] = dPixels[j];
+			}
+		}
+		CurveFitter cf = new CurveFitter(iRegPixels,dRegPixels);
+		cf.doFit(0);
+		double[] curveFitParams = cf.getParams();
+		float[] params = new float[3];
+		params[0] = (float) curveFitParams[0];
+		params[1] = (float) curveFitParams[1];
+		params[2] = (float) cf.getRSquared();
+		return params;
+	}
 
 }
