@@ -1,5 +1,7 @@
 package nist.quantitativeabsorbance;
 
+import java.io.File;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
@@ -40,7 +42,7 @@ public class QuantitativeAbsorptionThread implements Runnable {
 	
     public void run() {
 		AppParams params = AppParams.getInstance();
-		SimpleCapture cap = new SimpleCapture(AppParams.getChannelImageDir(0));
+		SimpleCapture cap = new SimpleCapture(true);
 		
 		channelName = AppParams.getChannelName();
 		absorptionSetting = AppParams.getAbsorptionSetting();
@@ -107,7 +109,8 @@ public class QuantitativeAbsorptionThread implements Runnable {
 								System.out.println(j);
 								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-								core_.waitForSystem();
+								core_.waitForDevice(transmittedDevice.get(j));
+								core_.waitForDevice(fluorescentDevice.get(j));
 								sampleLabel = channelName.get(j) + " - Light On Blank";
 								AppParams.setCurrentSampleName(sampleLabel);
 								currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
@@ -130,56 +133,62 @@ public class QuantitativeAbsorptionThread implements Runnable {
 							JOptionPane.PLAIN_MESSAGE);
 						sampleLabel = "Sample #"+Integer.toString(i-1);
 					} else {
-						for (int j=0; j<absorptionSetting.size(); j++) {
-							if (absorptionSetting.get(j).equals("Fluorescence")) {
-								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-								core_.setShutterOpen(false);
-								core_.setShutterDevice(AppParams.getFluorescentShutter());
-								break;
-							}
-							if (j==absorptionSetting.size()) {
-								core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
-								core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
-								core_.setShutterOpen(false);
-								core_.setShutterDevice(AppParams.getTransmittedShutter());
-							}
-						}
+						
+						core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
+						core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
+						
 						sampleLabel = platePl.getPosition(i-2).getLabel();
+						long startTime = System.currentTimeMillis();
 						MultiStagePosition.goToPosition(platePl.getPosition(i-2), core_);
-						core_.waitForSystem();
+						System.out.print("Stage move time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
+
+						startTime = System.currentTimeMillis();
 						core_.setShutterOpen(true);
+						System.out.print("Shutter open time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
 					}
 					
 					for (int j = 0; j<numChannels; j++) {
 						AppParams.setCurrentSampleName(sampleLabel);
-						if (absorptionSetting.get(j).equals("Fluorescence")){
-							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-							core_.waitForSystem();
-							currentSample = cap.singleCapture(sampleLabel, (int) channelExposure.get(j));
-							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
-						} else if (absorptionSetting.get(j).equals("Phase/DIC")) {
-							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-							core_.waitForSystem();
+						if (absorptionSetting.get(j).equals("Absorbance")){
 							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
 								core_.setShutterOpen(false);
 								core_.setShutterDevice(AppParams.getTransmittedShutter());
 								core_.setShutterOpen(true);
 							}
-							currentSample = cap.singleCapture(sampleLabel, (int) channelExposure.get(j));
+							if (j!=0) {
+								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
+								core_.waitForSystem();
+							}
+							long startTime = System.currentTimeMillis();
+							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+							long captureTime = System.currentTimeMillis(); 
+							System.out.print("Capture time: " + Long.toString(captureTime-startTime) + "\n");
+							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + File.separator + "Raw Images" + File.separator + sampleLabel);
+							long saveTime = System.currentTimeMillis();
+							System.out.print("Save time: " + Long.toString(saveTime - captureTime) + "\n");
+						} else if (absorptionSetting.get(j).startsWith("Phase")) {
+							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
+								core_.setShutterOpen(false);
+								core_.setShutterDevice(AppParams.getTransmittedShutter());
+								core_.setShutterOpen(true);
+							}
+							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
+							core_.waitForSystem();
+							currentSample = cap.singleCapture(sampleLabel,channelExposure.get(j));
 							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						} else {
+							if (!core_.getShutterDevice().equals(AppParams.getFluorescentShutter())) {
+								core_.setShutterOpen(false);
+								core_.setShutterDevice(AppParams.getFluorescentShutter());
+								core_.setShutterOpen(true);
+							}
+							cap.setExposure(channelExposure.get(j));
 							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 							core_.waitForSystem();
-							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
-								core_.setShutterOpen(false);
-								core_.setShutterDevice(AppParams.getTransmittedShutter());
-								core_.setShutterOpen(true);
-							}
-							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+							currentSample = cap.singleCapture(sampleLabel);
 							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						}
 					}

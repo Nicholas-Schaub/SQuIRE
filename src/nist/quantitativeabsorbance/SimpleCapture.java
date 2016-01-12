@@ -30,13 +30,13 @@ public class SimpleCapture {
 	public ImagePlus powerCaptureSeries(String imgName, int start, int end, int replicates){
 		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, end-start+1, bitDepth); 
 		for (int i = start; i<=end; i++) {
-			int exposure = (int) Math.pow(2,i);
+			double exposure = Math.pow(2,i);
 			ImagePlus tempImage = seriesCapture(imgName,exposure,replicates);
 			for (int j = 1; j<=replicates; j++) {
 				imageSeries.setPosition(1,j,i+1);
 				tempImage.setPosition(1,j,1);
 				imageSeries.getProcessor().setPixels(tempImage.getProcessor().getPixels());
-				imageSeries.getStack().setSliceLabel(Integer.toString(exposure), imageSeries.getCurrentSlice());
+				imageSeries.getStack().setSliceLabel(Double.toString(exposure), imageSeries.getCurrentSlice());
 			}
 		}
 		
@@ -45,7 +45,7 @@ public class SimpleCapture {
 		return imageSeries;
 	}
 	
-	public ImagePlus seriesCapture(String imgName, int exposure, int replicates) {
+	public ImagePlus seriesCapture(String imgName, double exposure, int replicates) {
 		
 		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, 1, bitDepth);
 		double dExposure = (double) exposure;
@@ -82,7 +82,7 @@ public class SimpleCapture {
 			
 			for (i = 1; i<=replicates; i++) {
 				ImageStack tempStack = imageSeries.getStack();
-				tempStack.setSliceLabel(Integer.toString(exposure), i);
+				tempStack.setSliceLabel(Double.toString(exposure), i);
 			}
 			
 			if (!isLive) {
@@ -90,7 +90,6 @@ public class SimpleCapture {
 			}
 			
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
@@ -122,14 +121,13 @@ public class SimpleCapture {
 					1);
 			implus.getProcessor().setPixels(pix);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		return implus;
 	}
 	
-	public ImagePlus singleCapture(String str, int exposure) {
+	public ImagePlus singleCapture(String str, double exposure) {
 
 		ImagePlus implus = new ImagePlus();
 
@@ -146,7 +144,6 @@ public class SimpleCapture {
 			core_.startContinuousSequenceAcquisition(0);
 			isLive = true;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -156,12 +153,11 @@ public class SimpleCapture {
 			core_.stopSequenceAcquisition();
 			isLive = false;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	public void setExposure(int exposure) {
+	public void setExposure(double exposure) {
 		try {
 			if (isLive) {
 				core_.stopSequenceAcquisition();
@@ -172,7 +168,6 @@ public class SimpleCapture {
 				core_.startContinuousSequenceAcquisition(0);
 			}
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

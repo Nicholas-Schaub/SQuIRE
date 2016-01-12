@@ -60,7 +60,7 @@ public class BenchmarkingThread implements Runnable {
 			
   	      	AppParams.setForceMax(true);
   	      	AppParams.setCurrentSampleName("Read Current");
-			AppParams.setDarkBlank(new ImageStats());
+			AppParams.setDarkBlank(new ImageStats("Read Current", ""));
 			
 			if (!AppParams.hasAutoShutter()) {
 	  	      	JOptionPane.showMessageDialog(null,
@@ -74,10 +74,10 @@ public class BenchmarkingThread implements Runnable {
 			
   	      	AppParams.setForceMax(false);
   	      	AppParams.setCurrentSampleName("Initial Background");
-			currentSample = new ImageStats();
+			currentSample = new ImageStats("Initial Background","");
 			AppParams.addLightBlank(currentSample);
 			
-			currentSample.pixelLinReg(0, currentSample, AppParams.getDarkBlank());
+			currentSample.pixelLinReg(currentSample, AppParams.getDarkBlank());
 
 			timePoint.add((double) 0);
 			slope.add((double) currentSample.getAverageSlope(0));
@@ -93,6 +93,8 @@ public class BenchmarkingThread implements Runnable {
 				addResult(elapsedTime,currentSample.getAverageSlope(0),benchmarkAbsorption);
 			}
 			
+			int i = 1;
+			
 			while (true) {
 				
 				if (params.getStop() || Thread.interrupted()) {
@@ -101,8 +103,8 @@ public class BenchmarkingThread implements Runnable {
 				}
 
 				AppParams.setCurrentSampleName("Stabilization");
-				currentSample = new ImageStats();
-				currentSample.pixelLinReg(0, AppParams.getLightBlank(0), AppParams.getDarkBlank());
+				currentSample = new ImageStats("Stabilization", Integer.toString(i++));
+				currentSample.pixelLinReg(AppParams.getLightBlank(0), AppParams.getDarkBlank());
 				
 				currentSlope = currentSample.getAverageSlope(0);
 				

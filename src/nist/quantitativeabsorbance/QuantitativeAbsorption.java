@@ -25,18 +25,23 @@ public class QuantitativeAbsorption implements MMPlugin {
 
 	   public void show() {
 		   
-		  // Make sure live mode is turned off.
-		  if (app_.isLiveModeOn()) {app_.enableLiveMode(false);}
-	      
-		  // Display a dialog to configure the acquisition.
-		  AppParams.getInstance().setApp(app_);
-		  AppParams.initializeMicroscopeHardware();
-		  try {
-			new QuantitativeAbsorptionGUI();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		   // Make sure live mode is turned off.
+		   if (app_.isLiveModeOn()) {app_.enableLiveMode(false);}
+
+		   // Display a dialog to configure the acquisition.
+		   AppParams.getInstance().setApp(app_);
+		   AppParams.initializeMicroscopeHardware();
+		   testHardware();
+		   try {
+			   new QuantitativeAbsorptionGUI();
+		   } catch (Exception e) {
+			   // TODO Auto-generated catch block
+			   e.printStackTrace();
+		   }
+	   }
+	   
+	   public void testHardware() {
+
 	   }
 
 
