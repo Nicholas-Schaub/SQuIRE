@@ -2,23 +2,18 @@ package nist.quantitativeabsorbance;
 
 import java.io.File;
 
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.NewImage;
-
 import javax.swing.JOptionPane;
 
-import mmcorej.CMMCore;
-import mmcorej.DoubleVector;
-import mmcorej.StrVector;
-
-import org.apache.commons.math3.filter.KalmanFilter;
 import org.micromanager.api.MultiStagePosition;
 import org.micromanager.api.PositionList;
 import org.micromanager.api.ScriptInterface;
 import org.micromanager.utils.MMScriptException;
 
-import clooj.indent__init;
+import ij.IJ;
+import ij.ImagePlus;
+import mmcorej.CMMCore;
+import mmcorej.DoubleVector;
+import mmcorej.StrVector;
 
 public class QuantitativeAbsorptionThread implements Runnable {
 	private ImagePlus currentSample;
