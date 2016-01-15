@@ -67,7 +67,11 @@ public class SimpleCapture {
 			
 			int currentSlice = 0;
 			while ((currentSlice+core_.getRemainingImageCount())<=replicates) {
-				for (int j = 0; j<core_.getRemainingImageCount(); j++) {
+				int remainingImages = core_.getRemainingImageCount();
+				if (core_.getRemainingImageCount()>replicates-currentSlice) {
+					remainingImages = replicates-currentSlice;
+				}
+				for (int j = 0; j<remainingImages; j++) {
 					imageSeries.setPosition(1, ++currentSlice, 1);
 					imageSeries.getProcessor().setPixels(core_.popNextImage());
 					imageSeries.getStack().setSliceLabel(Double.toString(exposure), currentSlice);
@@ -122,6 +126,8 @@ public class SimpleCapture {
 			e.printStackTrace();
 		}
 
+		implus.setTitle(str);
+		
 		return implus;
 	}
 	
@@ -132,7 +138,7 @@ public class SimpleCapture {
 		setExposure(exposure);
 		
 		implus = singleCapture(str);
-
+		
 		return implus;
 	}
 	

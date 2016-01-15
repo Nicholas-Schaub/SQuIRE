@@ -25,7 +25,7 @@ public class ImageStats {
 	public ImageStack slopeStats;
 	public ImagePlus absorbance;
 	public ImageStack imageStatsStack;
-	public ImageStack channelAbsorption = null;
+	public ImagePlus channelAbsorption = null;
 	private ImagePlus meanImage;
 	private ImagePlus stdImage;
 	public ImagePlus rawImage;
@@ -64,16 +64,9 @@ public class ImageStats {
 
 	// Call this function to perform statistics on an ImagePlus object.
 	public ImageStats(ImagePlus imp) {
-		this("", "");
-		rawImage = imp;
-	}
-	
-	// Direct calls to this instantiation is reserved for benchmarking cameras.
-	protected ImageStats(String sample, String channel) {
-		// Sample/channel label
-		name = sample;
-		channelLabel = channel;
-
+		name = imp.getTitle();
+		channelLabel = "";
+		
 		// Core and image attributes
 		core_ = AppParams.getCore_();
 		width = (int) core_.getImageWidth();
@@ -82,14 +75,24 @@ public class ImageStats {
 
 		// Make sure the bit depth is something ImageJ can handle
 		if ((bitdepth == 12) || (bitdepth==14)) {imagebitdepth=16;} else {imagebitdepth=bitdepth;}
-		
-		if (rawImage==null) {
-			System.out.println("Running statistics...");
-			getPixelExposureStats(AppParams.getForceMax());
-		}
+
+		rawImage = imp;
 		nFrames = rawImage.getNFrames();
 		nSlices = rawImage.getNSlices();
 		nChannels = rawImage.getNChannels();
+	}
+	
+	// Direct calls to this instantiation is reserved for benchmarking cameras.
+	protected ImageStats(String sample, String channel) {
+		this(new ImagePlus());
+		// Sample/channel label
+		name = sample;
+		channelLabel = channel;
+		
+		if (rawImage==null) {
+			System.out.println("Running pixel exposure statistics...");
+			getPixelExposureStats(AppParams.getForceMax());
+		}
 	}
 
 	// Performs linear regression on all pixels in an image - Last edit -> NJS 2015-08-28
@@ -148,8 +151,8 @@ public class ImageStats {
 		float[] poisson = pseudoPoisson();
 
 		// Determine the range of values accepted for linear regression
-		double maxValue = foreground.maxPixelIntensity[forelen-1] * (1-3*poisson[1]);
-		double minValue = background.maxPixelIntensity[backlen-1] * (1+3*poisson[2]);
+		double maxValue = foreground.maxPixelIntensity[forelen-1] * (1-3*(poisson[0]+poisson[1]*foreground.maxPixelIntensity[forelen]));
+		double minValue = background.maxPixelIntensity[backlen-1] * (1+3*(poisson[0]+poisson[1]*foreground.maxPixelIntensity[backlen]));
 		
 		IJ.log("Y-intercept: " + Double.toString(poisson[0]));
 		IJ.log("Slope: " + Double.toString(poisson[1]));
@@ -231,7 +234,7 @@ public class ImageStats {
 	public Float getAverageIntercept(int channel) {return averageIntercept;}
 
 	// Gets Absorption values from linear regression - Last edit -> NJS 2015-08-28
-	public ImageStack getAbsorbance(ImageStats foreground) {
+	public ImagePlus getAbsorbance(ImageStats foreground, ImageStats background) {
 		/*****************************************************************************************
 		 * This method performs determines the amount of absorption at each pixel for every		*
 		 * 	channel in an image. An absorption value is obtained using the a blank foreground	*
@@ -247,10 +250,9 @@ public class ImageStats {
 		float[] spixels;
 		float[] apixels;
 		int flen = foreground.width*foreground.height;
-		this.channelAbsorption = new ImageStack(foreground.width, foreground.height);
 
-		slopeForeground = foreground.getSlopeImage(0);
-		slopeSample = this.getSlopeImage(0);
+		slopeForeground = foreground.getSlopeImage();
+		slopeSample = this.getSlopeImage();
 
 		fpixels = (float[]) slopeForeground.getPixels(2);
 		spixels = (float[]) slopeSample.getPixels(2);
@@ -262,9 +264,9 @@ public class ImageStats {
 
 		imageHolder.setPixels(apixels);
 
-		this.channelAbsorption.addSlice(channelLabel,imageHolder,0);
+		channelAbsorption = new ImagePlus(channelLabel,imageHolder);
 
-		return this.channelAbsorption;
+		return channelAbsorption;
 	}
 
 	// Captures multiple images at various exposures and gets stats for each pixel (mean, std).
@@ -478,7 +480,7 @@ public class ImageStats {
 	public float[] getDeviationSet() {return deviationSet;}
 
 	// This method returns the ImageStack containing the results of the linear regression for the indicated channel.
-	public ImageStack getSlopeImage(int channel) {
+	public ImageStack getSlopeImage() {
 		return slopeStats;
 	}
 	

@@ -42,13 +42,12 @@ public class AppParams {
 	private static String outDir; //save folder for individual capture runs
 	private static StrVector rawImageDir;
 	private static StrVector meanImageDir;
-	private static StrVector varianceImageDir;
+	private static StrVector stdImageDir;
 	private static StrVector linearRegressionDir;
-	private static StrVector slopeImageDir;
 	private static StrVector channelImageDir;
 	private static boolean saveRawImages = false;
 	private static boolean saveMeanImages = false;
-	private static boolean saveVarianceImages = false;
+	private static boolean saveStdImages = false;
 	private static boolean saveLinearRegression = false;
 	private static boolean saveSlopeImage = false;
 	private static boolean saveBenchmarkingExcel = false; //benchmarking
@@ -157,16 +156,15 @@ public class AppParams {
 	public static boolean saveBenchmarkTxt() {return saveBenchmarkingTxt;}
 	public static boolean isSaveRawImages() {return saveRawImages;}
 	public static boolean isSaveMeanImages() {return saveMeanImages;}
-	public static boolean isSaveVarianceImages() {return saveVarianceImages;}
+	public static boolean isSaveStdImages() {return saveStdImages;}
 	public static boolean isLinearRegression() {return saveLinearRegression;}
 	public static boolean isSaveSlopeImage() {return saveSlopeImage;}
 	public static String getCoreSaveDir() {return coreSaveDir;}
 	public static String getOutDir() {return outDir;}
 	public static String getRawImageDir(int index) {return rawImageDir.get(index);}
 	public static String getMeanImageDir(int index) {return meanImageDir.get(index);}
-	public static String getVarianceImageDir(int index) {return varianceImageDir.get(index);}
+	public static String getStdImageDir(int index) {return stdImageDir.get(index);}
 	public static String getLinearRegressionDir(int index) {return linearRegressionDir.get(index);}
-	public static String getSlopeImageDir(int index) {return slopeImageDir.get(index);}
 	public static String getChannelImageDir(int index) {return channelImageDir.get(index);}
 	
 	// Methods to set save settings
@@ -225,7 +223,7 @@ public class AppParams {
 		channels = QuantitativeAbsorptionGUI.getControlPanel().getNumChannels();
 		saveRawImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveRawImages();
 		saveMeanImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveMeanImages();
-		saveVarianceImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveVarianceImages();
+		saveStdImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveStdImages();
 		saveLinearRegression = QuantitativeAbsorptionGUI.getControlPanel().getSaveLinearRegression();
 		saveSlopeImage = QuantitativeAbsorptionGUI.getControlPanel().getSaveSlopeImage();
 		useAutoShutter = QuantitativeAbsorptionGUI.getControlPanel().useAutoShutter();
@@ -293,16 +291,14 @@ public class AppParams {
 					channelImageDir = new StrVector();
 					rawImageDir = new StrVector();
 					meanImageDir = new StrVector();
-					varianceImageDir = new StrVector();
+					stdImageDir = new StrVector();
 					linearRegressionDir = new StrVector();
-					slopeImageDir = new StrVector();
 					for (int i = 0; i<channels; i++) {
 						channelImageDir.add(outDir + File.separator + channelName.get(i) + File.separator);
 						rawImageDir.add(channelImageDir.get(i) + "Raw Images" + File.separator);
 						meanImageDir.add(channelImageDir.get(i) + "Mean Images" + File.separator);
-						varianceImageDir.add(channelImageDir.get(i) + "Variance Images" + File.separator);
+						stdImageDir.add(channelImageDir.get(i) + "Std Images" + File.separator);
 						linearRegressionDir.add(channelImageDir.get(i) + "Linear Regression Images" + File.separator);
-						slopeImageDir.add(channelImageDir.get(i) + "Slope Images" + File.separator);
 						new File(channelImageDir.get(i)).mkdir();
 						if (absorptionSetting.get(i).equals("Absorbance")) {
 							if (saveRawImages) {
@@ -311,14 +307,11 @@ public class AppParams {
 							if (saveMeanImages) {
 								new File(meanImageDir.get(i)).mkdir();
 							}
-							if (saveVarianceImages) {
-								new File(varianceImageDir.get(i)).mkdir();
+							if (saveStdImages) {
+								new File(stdImageDir.get(i)).mkdir();
 							}
 							if (saveLinearRegression) {
 								new File(linearRegressionDir.get(i)).mkdir();
-							}
-							if (saveSlopeImage) {
-								new File(slopeImageDir.get(i)).mkdir();
 							}
 						}
 					}
@@ -397,7 +390,7 @@ public class AppParams {
 		pref.putBoolean("isAutomated", isAutomated);
 		pref.putBoolean("saveRawImages", saveRawImages);
 		pref.putBoolean("saveMeanImages", saveMeanImages);
-		pref.putBoolean("saveVarianceImages", saveVarianceImages);
+		pref.putBoolean("saveStdImages", saveStdImages);
 		pref.putBoolean("saveLinearRegression", saveLinearRegression);
 		pref.putBoolean("saveSlopeImage", saveSlopeImage);
 		pref.putBoolean("useAutoShutter", useAutoShutter);
@@ -433,7 +426,7 @@ public class AppParams {
 		isAutomated = pref.getBoolean("isAutomated", isAutomated);
 		saveRawImages = pref.getBoolean("saveRawImages", saveRawImages);
 		saveMeanImages = pref.getBoolean("saveMeanImages", saveMeanImages);
-		saveVarianceImages = pref.getBoolean("saveVarianceImages", saveVarianceImages);
+		saveStdImages = pref.getBoolean("saveStdImages", saveStdImages);
 		saveLinearRegression = pref.getBoolean("saveLinearRegression", saveLinearRegression);
 		saveSlopeImage = pref.getBoolean("saveSlopeImage", saveSlopeImage);
 		useAutoShutter = pref.getBoolean("useAutoShutter", useAutoShutter);

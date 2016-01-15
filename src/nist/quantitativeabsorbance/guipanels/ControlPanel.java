@@ -70,7 +70,7 @@ implements ActionListener
 	private DirectoryChooserPanel outputDirectory;
 	private JCheckBox saveRawImages;
 	private JCheckBox saveMeanImages;
-	private JCheckBox saveVarianceImages;
+	private JCheckBox saveStdImages;
 	private JCheckBox saveLinearRegression;
 	private JCheckBox saveSlopeImage;
 	
@@ -153,9 +153,9 @@ implements ActionListener
 			saveMeanImages = new JCheckBox();
 			saveMeanImages.setText("Save Average (Mean) Images");
 			saveMeanImages.setSelected(AppParams.isSaveMeanImages());
-			saveVarianceImages = new JCheckBox();
-			saveVarianceImages.setText("Save Variance Images");
-			saveVarianceImages.setSelected(AppParams.isSaveVarianceImages());
+			saveStdImages = new JCheckBox();
+			saveStdImages.setText("Save Std Images");
+			saveStdImages.setSelected(AppParams.isSaveStdImages());
 			saveLinearRegression = new JCheckBox();
 			saveLinearRegression.setText("Save Linear Regression Stack");
 			saveLinearRegression.setSelected(AppParams.isLinearRegression());
@@ -312,7 +312,7 @@ implements ActionListener
 		saveSettingsPanel.add(saveMeanImages,c);
 		//c.gridx = 4;
 		c.gridx = 2;
-		saveSettingsPanel.add(saveVarianceImages,c);
+		saveSettingsPanel.add(saveStdImages,c);
 		//c.gridwidth = 3;
 		//c.gridy++;
 		//c.gridx= 1;
@@ -570,9 +570,9 @@ implements ActionListener
 	
 	public void setSaveMeanImages(boolean saveMean) {saveMeanImages.setSelected(saveMean);}
 	
-	public boolean getSaveVarianceImages() {return saveVarianceImages.isSelected();}
+	public boolean getSaveStdImages() {return saveStdImages.isSelected();}
 	
-	public void setSaveVarianceImages(boolean saveVariance) {saveVarianceImages.setSelected(saveVariance);}
+	public void setSaveStdImages(boolean saveStd) {saveStdImages.setSelected(saveStd);}
 	
 	public boolean getSaveLinearRegression() {return saveLinearRegression.isSelected();}
 	

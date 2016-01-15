@@ -83,7 +83,8 @@ public class SampleCaptureThread implements Runnable {
 					sampleLabel = "Light off intensity";
 					AppParams.setCurrentSampleName(sampleLabel);
 					currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
-					IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(0));
+					AppParams.setDarkBlank(new ImageStats(currentSample));
+					IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(0)+currentSample.getTitle());
 				} else if (i==1) {
 					
 					if (AppParams.hasAutoShutter() && !AppParams.useAutoShutter()) {
@@ -98,19 +99,20 @@ public class SampleCaptureThread implements Runnable {
 							JOptionPane.PLAIN_MESSAGE);
 					}
 					
-					if (numChannels>1) {
-						for (int j = 0; j<numChannels; j++) {
-							if (absorptionSetting.get(j).equals("Absorbance")){
-								System.out.println(j);
-								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-								core_.waitForDevice(transmittedDevice.get(j));
-								core_.waitForDevice(fluorescentDevice.get(j));
-								sampleLabel = channelName.get(j) + " - Light On Blank";
-								AppParams.setCurrentSampleName(sampleLabel);
-								currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
-								IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j));
-							}
+					for (int j = 0; j<numChannels; j++) {
+						if (absorptionSetting.get(j).equals("Absorbance")){
+							System.out.println(j);
+							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
+							core_.waitForDevice(transmittedDevice.get(j));
+							core_.waitForDevice(fluorescentDevice.get(j));
+							sampleLabel = channelName.get(j) + " - Light On Blank";
+							AppParams.setCurrentSampleName(sampleLabel);
+							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+							ImageStats lightStats = new ImageStats(currentSample);
+							AppParams.addLightBlank(lightStats);
+							System.out.println("Added Light Blank!");
+							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j));
 						}
 					}
 
@@ -142,6 +144,8 @@ public class SampleCaptureThread implements Runnable {
 						System.out.print("Shutter open time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
 					}
 					
+					int currentAbsorb = 0;
+					
 					for (int j = 0; j<numChannels; j++) {
 						AppParams.setCurrentSampleName(sampleLabel);
 						if (absorptionSetting.get(j).equals("Absorbance")){
@@ -153,15 +157,19 @@ public class SampleCaptureThread implements Runnable {
 							if (j!=0) {
 								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-								core_.waitForSystem();
 							}
+							core_.waitForSystem();
 							long startTime = System.currentTimeMillis();
 							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
 							long captureTime = System.currentTimeMillis(); 
 							System.out.print("Capture time: " + Long.toString(captureTime-startTime) + "\n");
-							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + File.separator + "Raw Images" + File.separator + sampleLabel);
+							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + sampleLabel);
 							long saveTime = System.currentTimeMillis();
 							System.out.print("Save time: " + Long.toString(saveTime - captureTime) + "\n");
+							Thread absorptionThread = new Thread(new AbsorptionThread(currentSample,AppParams.getLightBlank(currentAbsorb++),j));
+							absorptionThread.start();
+							long threadTime = System.currentTimeMillis();
+							System.out.print("Thread initiation time: " + Long.toString(threadTime - saveTime) + "\n");
 						} else if (absorptionSetting.get(j).startsWith("Phase")) {
 							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
 								core_.setShutterOpen(false);
