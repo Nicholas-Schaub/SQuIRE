@@ -183,6 +183,7 @@ public class ImageStats {
 				IJ.log("Maximum background intensity: " + Float.toString(background.maxPixelIntensity[forelen-1]));
 				IJ.log("Upper Intensity Bound: " + Double.toString(maxValue));
 				IJ.log("Lower Intesity Bound: " + Double.toString(minValue));
+				return new ImagePlus();
 			}
 			
 			exposureFit = new double[j-k];
@@ -298,7 +299,9 @@ public class ImageStats {
 			
 			for (int j=1; j<=(numReplicates); j++) {
 				imstackTemp.setPosition(1,j,i);
+				imcaptureTemp.setPosition(1,j,1);
 				imstackTemp.getProcessor().setPixels(imcaptureTemp.getProcessor().getPixels());
+				imstackTemp.getStack().setSliceLabel(imcaptureTemp.getStack().getSliceLabel(imcaptureTemp.getCurrentSlice()), imstackTemp.getCurrentSlice());
 			}
 
 			//This section calculates the average of the replicates and the corresponding deviation
@@ -406,13 +409,11 @@ public class ImageStats {
 	}
 	
 	private ImagePlus getFrameDeviationAndMean(ImagePlus imp) {
-		
 
 		stdImage = new ImagePlus();
 		int frames = imp.getNFrames();
 		meanImage = IJ.createImage("", width, height, frames, 32);
-		ImageStack meanStack = ImageStack.create(width,height,frames,32);
-		meanStack = meanStack.convertToFloat();
+		ImageStack meanStack = new ImageStack(width,height);
 		ImageStack stdStack = new ImageStack(width,height);
 		
 		int flen = width*height;
@@ -439,14 +440,14 @@ public class ImageStats {
 					new FloatProcessor(width,height,fpixeldeviation),
 					i-1);
 			
-			meanImage.setPosition(i);
-			meanImage.getProcessor().setPixels(fpixelmean);
+			meanStack.addSlice(imp.getImageStack().getSliceLabel(imp.getCurrentSlice()),
+					new FloatProcessor(width,height,fpixelmean),
+					i-1);
 		}
-
-		stdImage = new ImagePlus("",stdStack.convertToFloat());
 		
-		IJ.saveAsTiff(meanImage, AppParams.getCoreSaveDir()+"MeanImage");
-
+		stdImage = new ImagePlus("",stdStack);
+		meanImage = new ImagePlus("",meanStack);
+		
 		return stdImage;
 	}
 	
