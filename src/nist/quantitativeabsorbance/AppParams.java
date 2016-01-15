@@ -197,7 +197,7 @@ public class AppParams {
 		if (callSource instanceof BenchmarkingPanel) {
 			thread = new Thread(new BenchmarkingThread());
 		} else if (callSource instanceof ControlPanel) {
-			thread = new Thread(new QuantitativeAbsorptionThread());
+			thread = new Thread(new SampleCaptureThread());
 		}
 		
 		thread.start();
@@ -298,26 +298,26 @@ public class AppParams {
 					slopeImageDir = new StrVector();
 					for (int i = 0; i<channels; i++) {
 						channelImageDir.add(outDir + File.separator + channelName.get(i) + File.separator);
+						rawImageDir.add(channelImageDir.get(i) + "Raw Images" + File.separator);
+						meanImageDir.add(channelImageDir.get(i) + "Mean Images" + File.separator);
+						varianceImageDir.add(channelImageDir.get(i) + "Variance Images" + File.separator);
+						linearRegressionDir.add(channelImageDir.get(i) + "Linear Regression Images" + File.separator);
+						slopeImageDir.add(channelImageDir.get(i) + "Slope Images" + File.separator);
 						new File(channelImageDir.get(i)).mkdir();
 						if (absorptionSetting.get(i).equals("Absorbance")) {
 							if (saveRawImages) {
-								rawImageDir.add(channelImageDir.get(i) + "Raw Images" + File.separator);
 								new File(rawImageDir.get(i)).mkdir();
 							}
 							if (saveMeanImages) {
-								meanImageDir.add(channelImageDir.get(i) + "Mean Images" + File.separator);
 								new File(meanImageDir.get(i)).mkdir();
 							}
 							if (saveVarianceImages) {
-								varianceImageDir.add(channelImageDir.get(i) + "Variance Images" + File.separator);
 								new File(varianceImageDir.get(i)).mkdir();
 							}
 							if (saveLinearRegression) {
-								linearRegressionDir.add(channelImageDir.get(i) + "Linear Regression Images" + File.separator);
 								new File(linearRegressionDir.get(i)).mkdir();
 							}
 							if (saveSlopeImage) {
-								slopeImageDir.add(channelImageDir.get(i) + "Slope Images" + File.separator);
 								new File(slopeImageDir.get(i)).mkdir();
 							}
 						}

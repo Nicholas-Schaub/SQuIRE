@@ -15,7 +15,7 @@ import mmcorej.CMMCore;
 import mmcorej.DoubleVector;
 import mmcorej.StrVector;
 
-public class QuantitativeAbsorptionThread implements Runnable {
+public class SampleCaptureThread implements Runnable {
 	private ImagePlus currentSample;
 	private String sampleLabel;
 	private ScriptInterface app_ = AppParams.getApp_();
@@ -159,7 +159,7 @@ public class QuantitativeAbsorptionThread implements Runnable {
 							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
 							long captureTime = System.currentTimeMillis(); 
 							System.out.print("Capture time: " + Long.toString(captureTime-startTime) + "\n");
-							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + File.separator + "Raw Images" + File.separator + sampleLabel);
+							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + File.separator + "Raw Images" + File.separator + sampleLabel);
 							long saveTime = System.currentTimeMillis();
 							System.out.print("Save time: " + Long.toString(saveTime - captureTime) + "\n");
 						} else if (absorptionSetting.get(j).startsWith("Phase")) {
