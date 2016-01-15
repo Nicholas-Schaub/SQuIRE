@@ -70,6 +70,7 @@ public class SimpleCapture {
 				for (int j = 0; j<core_.getRemainingImageCount(); j++) {
 					imageSeries.setPosition(1, ++currentSlice, 1);
 					imageSeries.getProcessor().setPixels(core_.popNextImage());
+					imageSeries.getStack().setSliceLabel(Double.toString(exposure), currentSlice);
 				}
 			}
 			
@@ -77,12 +78,7 @@ public class SimpleCapture {
 			for (int j = 0; j<remainingImages; j++) {
 				imageSeries.setPosition(1, ++currentSlice, 1);
 				imageSeries.getProcessor().setPixels(core_.popNextImage());
-			}
-			
-			for (int i = 1; i<=replicates; i++) {
-				imageSeries.setPosition(1, i, 1);
-				ImageStack tempStack = imageSeries.getStack();
-				tempStack.setSliceLabel(Double.toString(exposure), i);
+				imageSeries.getStack().setSliceLabel(Double.toString(exposure), currentSlice);
 			}
 			
 			if (!isLive) {
