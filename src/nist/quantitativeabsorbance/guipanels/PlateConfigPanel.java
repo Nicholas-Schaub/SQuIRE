@@ -450,6 +450,7 @@ implements ActionListener, ParentPlateGUI
 				System.out.println("(" + i + "," + j + ") = " + x + "," + y);
 
 				mps.add(sp);
+				mps.setGridCoordinates(i, j);
 				sites.addPosition(mps);
 				if (isEven) {
 					j++;

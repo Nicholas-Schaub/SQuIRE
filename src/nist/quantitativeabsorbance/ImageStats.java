@@ -447,8 +447,8 @@ public class ImageStats {
 					i-1);
 		}
 		
-		stdImage = new ImagePlus("",stdStack);
-		meanImage = new ImagePlus("",meanStack);
+		stdImage = new ImagePlus(name,stdStack);
+		meanImage = new ImagePlus(name,meanStack);
 		
 		return stdImage;
 	}

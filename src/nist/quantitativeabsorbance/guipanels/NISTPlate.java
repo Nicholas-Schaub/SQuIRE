@@ -333,7 +333,9 @@ public class NISTPlate extends SBSPlate {
 							StagePosition absSp = new StagePosition();
 							absSp.x = wellX + sp.x;
 							absSp.y = wellY + sp.y;
-							absMps.setLabel("ROW_" + Integer.toString(i) + "_COL_" + Integer.toString(colIndex-1));
+							String formatRow = String.format("%03d", mps.getGridRow());
+							String formatCol = String.format("%03d", mps.getGridColumn());
+							absMps.setLabel("r" + formatRow + "_c" + formatCol);
 							absSp.stageName = xyStageName;
 							absSp.numAxes = 2;
 							absMps.add(absSp);
