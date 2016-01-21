@@ -9,6 +9,7 @@ public class AbsorptionThread implements Runnable {
 	private String stdSaveDir;
 	private String slopeSaveDir;
 	private String rawImageDir;
+	private String absImageDir;
 	private boolean saveMean;
 	private boolean saveSTD;
 	private boolean saveSlope;
@@ -33,6 +34,7 @@ public class AbsorptionThread implements Runnable {
 		saveRaw = AppParams.isSaveRawImages();
 		this.foreground = foreground;
 		background = AppParams.getDarkBlank();
+		absImageDir = AppParams.getChannelImageDir(channelIndex);
 	}
 	
 	@Override
@@ -47,7 +49,7 @@ public class AbsorptionThread implements Runnable {
 		slopeImage = imStat.pixelLinReg(foreground, background);
 		checkAndSave(slopeImage,saveSlope,slopeSaveDir);
 		absorbanceImage = imStat.getAbsorbance(foreground, background);
-		checkAndSave(slopeImage,saveSlope,slopeSaveDir);
+		checkAndSave(absorbanceImage,true,absImageDir);
 		long stopTime = System.currentTimeMillis();
 		
 		System.out.println("Thread for " + rawImage.getTitle() + " was completed in "

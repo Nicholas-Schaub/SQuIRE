@@ -104,7 +104,7 @@ public class BenchmarkingThread implements Runnable {
 
 				AppParams.setCurrentSampleName("Stabilization");
 				currentSample = new ImageStats("Stabilization", Integer.toString(i++));
-				currentSample.pixelLinReg(AppParams.getLightBlank(0), AppParams.getDarkBlank());
+				currentSample.pixelLinReg(currentSample, AppParams.getDarkBlank());
 				
 				currentSlope = currentSample.getAverageSlope(0);
 				

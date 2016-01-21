@@ -82,7 +82,7 @@ public class SampleCaptureThread implements Runnable {
 					}
 					sampleLabel = "Light off intensity";
 					AppParams.setCurrentSampleName(sampleLabel);
-					currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+					currentSample = cap.powerCaptureSeries(sampleLabel, 0, 10, numReplicates);
 					AppParams.setDarkBlank(new ImageStats(currentSample));
 					IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(0)+currentSample.getTitle());
 				} else if (i==1) {
@@ -108,8 +108,9 @@ public class SampleCaptureThread implements Runnable {
 							core_.waitForDevice(fluorescentDevice.get(j));
 							sampleLabel = channelName.get(j) + " - Light On Blank";
 							AppParams.setCurrentSampleName(sampleLabel);
-							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+							currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,3)), numReplicates);
 							ImageStats lightStats = new ImageStats(currentSample);
+							lightStats.pixelLinReg(lightStats, AppParams.getDarkBlank());
 							AppParams.addLightBlank(lightStats);
 							System.out.println("Added Light Blank!");
 							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j));
@@ -140,7 +141,11 @@ public class SampleCaptureThread implements Runnable {
 						System.out.print("Stage move time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
 
 						startTime = System.currentTimeMillis();
-						core_.setShutterOpen(true);
+						if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
+							core_.setShutterOpen(false);
+							core_.setShutterDevice(AppParams.getTransmittedShutter());
+							core_.setShutterOpen(true);
+						}
 						System.out.print("Shutter open time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
 					}
 					
@@ -160,7 +165,7 @@ public class SampleCaptureThread implements Runnable {
 							}
 							core_.waitForSystem();
 							long startTime = System.currentTimeMillis();
-							currentSample = cap.powerCaptureSeries(sampleLabel, 0, 3, numReplicates);
+							currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,3)), numReplicates);
 							long captureTime = System.currentTimeMillis(); 
 							System.out.print("Capture time: " + Long.toString(captureTime-startTime) + "\n");
 							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + sampleLabel);

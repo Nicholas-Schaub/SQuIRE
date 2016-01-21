@@ -28,10 +28,17 @@ public class SimpleCapture {
 	}
 	
 	public ImagePlus powerCaptureSeries(String imgName, int start, int end, int replicates){
-		int numExposures = end-start+1;
+		int pStart;
+		if (start<1) {
+			pStart = -1;
+		} else {
+			pStart = 31-Integer.numberOfLeadingZeros((int) start);
+		}
+		int pEnd = 31-Integer.numberOfLeadingZeros((int) end);
+		int numExposures = pEnd-pStart+1;
 		int currentFrame = 0;
-		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, numExposures, bitDepth); 
-		for (int i = start; i<=end; i++) {
+		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, (int) numExposures, bitDepth); 
+		for (int i = pStart; i <= pEnd; i++) {
 			currentFrame++;
 			double exposure = Math.pow(2,i);
 			ImagePlus tempImage = seriesCapture(imgName,exposure,replicates);

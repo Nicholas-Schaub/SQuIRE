@@ -41,8 +41,6 @@ public class ImageStats {
 	public float[] deviationSet;
 	public float[] maxPixelIntensity;
 	public float[] minPixelIntensity;
-	public float[] maxPixelDeviation;
-	public float[] minPixelDeviation;
 
 	// Basic image and capture settings.
 	public String name;
@@ -115,7 +113,11 @@ public class ImageStats {
 			return new ImagePlus();
 		}
 		
-		if (background.meanImage.getNSlices()<nFrames) {
+		if (background.meanImage==null) {
+			background.getFrameMean();
+		}
+		
+		if (background.meanImage.getNFrames()<nFrames) {
 			background.getFrameDeviation();
 			if (background.meanImage.getNSlices()<nFrames) {
 				IJ.error("Background frames smaller than image frames. \n Need more background frames for linear regression.");
@@ -129,8 +131,8 @@ public class ImageStats {
 		
 		ImageStack slopeStats = new ImageStack(width,height,3);
 		int zlen = meanImage.getStackSize();
-		int forelen = foreground.intensitySet.length;
-		int backlen = background.intensitySet.length;
+		int forelen = foreground.meanImage.getNSlices();
+		int backlen = background.meanImage.getNSlices();
 		float[] dIntensity = new float[zlen];
 		double[] intensityFit;
 		float[] exposureRange = this.getExposureRange();
@@ -148,15 +150,27 @@ public class ImageStats {
 		double[] curveFitParams = new double[2];
 		int j = 0;
 		int k = 0;
-		float[] poisson = pseudoPoisson();
-
-		// Determine the range of values accepted for linear regression
-		double maxValue = foreground.maxPixelIntensity[forelen-1] * (1-3*(poisson[0]+poisson[1]*foreground.maxPixelIntensity[forelen]));
-		double minValue = background.maxPixelIntensity[backlen-1] * (1+3*(poisson[0]+poisson[1]*foreground.maxPixelIntensity[backlen]));
 		
-		IJ.log("Y-intercept: " + Double.toString(poisson[0]));
-		IJ.log("Slope: " + Double.toString(poisson[1]));
-		IJ.log("R^2: " + Double.toString(poisson[2]));
+		int maxIntensity = forelen;
+/*		for (int i = forelen; i>1; i--) {
+			System.out.println(i);
+			System.out.println(deviationSet[i-1]);
+			if (foreground.deviationSet[i-1]<foreground.deviationSet[i-2]) {
+				maxIntensity = i;
+			}
+		}*/
+
+		System.out.println("Exposure positions: " + Integer.toString(forelen));
+		System.out.println("Max exposure position: " + Integer.toString(maxIntensity));
+		
+		// Determine the range of values accepted for linear regression
+		double maxValue = foreground.maxPixelIntensity[maxIntensity-1] - (3*foreground.deviationSet[maxIntensity-2]);
+		double minValue = background.maxPixelIntensity[backlen-1] + (3*background.deviationSet[backlen-1]);
+
+		System.out.println("Maximum pixel intensity: " + Double.toString(foreground.maxPixelIntensity[maxIntensity-1]));
+		System.out.println("Maximum pixel deviation: " + Double.toString(foreground.deviationSet[maxIntensity-2]));
+		System.out.println("Maximum allowed intensity: " + Double.toString(maxValue));
+		System.out.println("Minimum allowed intensity: " + Double.toString(minValue));
 
 		// This should loop should be optimized.
 		for (int i=0; i<flen; i++) {
@@ -182,7 +196,7 @@ public class ImageStats {
 				IJ.log("Error in linear regression bounds estimation.\n" +
 						"This probably means the frames aren't in order of increasing exposure, \n" +
 						"or the background signal distribution overlaps the foreground signal distribution.");
-				IJ.log("Maximum foreground intensity: " + Float.toString(foreground.maxPixelIntensity[forelen-1]));
+				IJ.log("Maximum foreground intensity: " + Float.toString(maxPixelIntensity[forelen-1]));
 				IJ.log("Maximum background intensity: " + Float.toString(background.maxPixelIntensity[forelen-1]));
 				IJ.log("Upper Intensity Bound: " + Double.toString(maxValue));
 				IJ.log("Lower Intesity Bound: " + Double.toString(minValue));
@@ -253,7 +267,7 @@ public class ImageStats {
 
 		slopeForeground = foreground.getSlopeImage();
 		slopeSample = this.getSlopeImage();
-
+		
 		fpixels = (float[]) slopeForeground.getPixels(2);
 		spixels = (float[]) slopeSample.getPixels(2);
 		apixels = new float[flen];
@@ -264,7 +278,7 @@ public class ImageStats {
 
 		imageHolder.setPixels(apixels);
 
-		channelAbsorption = new ImagePlus(channelLabel,imageHolder);
+		channelAbsorption = new ImagePlus(name,imageHolder);
 
 		return channelAbsorption;
 	}
@@ -392,22 +406,27 @@ public class ImageStats {
 		for (int i = 0; i<fMeanPixels.length; i++) {
 			fMean += fMeanPixels[i];
 		}
-		fMean /= fMeanPixels.length;
+		fMean /= (float) fMeanPixels.length;
 		
 		return fMean;
 	}
 	
 	private float getDeviationImageMean(ImageProcessor imp) {
-		float fDeviation = 0;
+		// TODO this needs to be corrected.
+		double fDeviation = 0;
 		float[] fDeviationPixels = (float[]) imp.getPixels();
 		
 		for (int i = 0; i<fDeviationPixels.length; i++) {
-			fDeviation += fDeviationPixels[i]*fDeviationPixels[i];
+			fDeviation += (double) fDeviationPixels[i];//*fDeviationPixels[i];
+			System.out.println("Current fDeviation sum: " + Double.toString(fDeviation));
 		}
-		fDeviation /= fDeviationPixels.length;
-		fDeviation = (float) Math.sqrt(fDeviation);
+		System.out.println("fDeviation sum = " + Double.toString(fDeviation));
+		fDeviation /= (double) fDeviationPixels.length;
+		//fDeviation = Math.sqrt(Math.abs(fDeviation));
 		
-		return fDeviation;
+		System.out.println("getDeviationImageMean = " + Double.toString(fDeviation));
+		
+		return (float) fDeviation;
 	}
 	
 	private ImagePlus getFrameDeviationAndMean(ImagePlus imp) {
@@ -450,6 +469,17 @@ public class ImageStats {
 		stdImage = new ImagePlus(name,stdStack);
 		meanImage = new ImagePlus(name,meanStack);
 		
+		maxPixelIntensity = new float[frames];
+		minPixelIntensity = new float[frames];
+		deviationSet = new float[frames];
+		for (int i=0; i<frames; i++){
+			meanImage.setPosition(i+1);
+			stdImage.setPosition(i+1);
+			maxPixelIntensity[i] = (float) meanImage.getStatistics().max;
+			minPixelIntensity[i] = (float) meanImage.getStatistics().min;
+			deviationSet[i] = (float) stdImage.getStatistics().mean;
+		}
+		
 		return stdImage;
 	}
 	
@@ -472,7 +502,16 @@ public class ImageStats {
 
 	private String getChannelLabel() {return channelLabel;}
 
-	private float[] getExposureRange() {return exposureSet;}
+	private float[] getExposureRange() {
+		if (meanImage==null) {
+			getFrameMean();
+		}
+		exposureSet = new float[nFrames];
+		for (int i = 0; i<nFrames; i++) {
+			exposureSet[i] = Float.parseFloat(meanImage.getImageStack().getSliceLabel(i+1));
+		}
+		return exposureSet;
+	}
 
 	public float[] getGlobalIntensity() {return intensitySet;}
 
