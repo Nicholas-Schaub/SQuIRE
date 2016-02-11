@@ -189,8 +189,6 @@ public class AppParams {
 			}
 		}
 		
-		IJ.error(Integer.toString(app_.getPositionList().getNumberOfPositions()));
-		
 		stopThread = false;
 		if (callSource instanceof BenchmarkingPanel) {
 			thread = new Thread(new BenchmarkingThread());
@@ -333,14 +331,6 @@ public class AppParams {
 		
 		stateDevices = core_.getLoadedDevicesOfType(DeviceType.StateDevice);
 		shutterDevices = core_.getLoadedDevicesOfType(DeviceType.ShutterDevice);
-		
-		for (int i=1; i<stateDevices.size(); i++) {
-			System.out.println(stateDevices.get(i));
-		}
-		
-		for (int i = 0; i<stateDevices.size(); i++) {
-			IJ.log(stateDevices.get(i));
-		}
 		
 		Log.error(Double.toString(core_.getPixelSizeUm()));
 	}

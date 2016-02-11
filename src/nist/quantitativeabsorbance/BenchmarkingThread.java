@@ -58,6 +58,7 @@ public class BenchmarkingThread implements Runnable {
 		    		  JOptionPane.PLAIN_MESSAGE);
 			}
 			
+			IJ.log("Getting dark image...");
   	      	AppParams.setForceMax(true);
   	      	AppParams.setCurrentSampleName("Read Current");
 			AppParams.setDarkBlank(new ImageStats("Read Current", ""));
@@ -72,6 +73,7 @@ public class BenchmarkingThread implements Runnable {
 				Thread.sleep(100);
 			}
 			
+			IJ.log("Getting first image...");
   	      	AppParams.setForceMax(false);
   	      	AppParams.setCurrentSampleName("Initial Background");
 			currentSample = new ImageStats("Initial Background","");
@@ -104,7 +106,9 @@ public class BenchmarkingThread implements Runnable {
 
 				AppParams.setCurrentSampleName("Stabilization");
 				currentSample = new ImageStats("Stabilization", Integer.toString(i++));
-				currentSample.pixelLinReg(currentSample, AppParams.getDarkBlank());
+				ImagePlus linReg = currentSample.pixelLinReg(currentSample, AppParams.getDarkBlank());
+				currentSample.rawImage.show();
+				linReg.show();
 				
 				currentSlope = currentSample.getAverageSlope(0);
 				
