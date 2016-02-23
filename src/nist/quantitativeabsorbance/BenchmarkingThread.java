@@ -77,22 +77,21 @@ public class BenchmarkingThread implements Runnable {
   	      	AppParams.setForceMax(false);
   	      	AppParams.setCurrentSampleName("Initial Background");
 			currentSample = new ImageStats("Initial Background","");
-			AppParams.addLightBlank(currentSample);
 			
 			currentSample.pixelLinReg(currentSample, AppParams.getDarkBlank());
 
 			timePoint.add((double) 0);
-			slope.add((double) currentSample.getAverageSlope(0));
+			slope.add((double) currentSample.getAverageSlope());
 			absorption.add(benchmarkAbsorption);
 			
-			previousSlope.add((double) currentSample.getAverageSlope(0));
+			previousSlope.add((double) currentSample.getAverageSlope());
 			previousAbsorption.add(benchmarkAbsorption);
 			
 			double elapsedTime = 0;
 			
 			if (AppParams.saveBenchmarkExcel()) {
 				tableSetup();
-				addResult(elapsedTime,currentSample.getAverageSlope(0),benchmarkAbsorption);
+				addResult(elapsedTime,currentSample.getAverageSlope(),benchmarkAbsorption);
 			}
 			
 			int i = 1;
@@ -106,11 +105,9 @@ public class BenchmarkingThread implements Runnable {
 
 				AppParams.setCurrentSampleName("Stabilization");
 				currentSample = new ImageStats("Stabilization", Integer.toString(i++));
-				ImagePlus linReg = currentSample.pixelLinReg(currentSample, AppParams.getDarkBlank());
-				currentSample.rawImage.show();
-				linReg.show();
+				currentSample.pixelLinReg(currentSample, AppParams.getDarkBlank());
 				
-				currentSlope = currentSample.getAverageSlope(0);
+				currentSlope = currentSample.getAverageSlope();
 				
 				float sum = 0;
 				for(Double j : previousSlope) {sum += j;}
@@ -129,7 +126,7 @@ public class BenchmarkingThread implements Runnable {
 				
 				timePoint.add(elapsedTime); //Elapsed time in minutes
 				
-				slope.add((double) currentSample.getAverageSlope(0));
+				slope.add((double) currentSample.getAverageSlope());
 				absorption.add(benchmarkAbsorption);
 				
 				Color markerColor = Color.BLACK;
@@ -173,8 +170,6 @@ public class BenchmarkingThread implements Runnable {
 					addResult(elapsedTime,currentSlope,benchmarkAbsorption);
 					benchmarkingResults.save(AppParams.getOutDir() + "BenchmarkingResults.csv");
 				}
-				
-				AppParams.addLightBlank(currentSample);
 			}
 			
 		} catch (InterruptedException ex) {

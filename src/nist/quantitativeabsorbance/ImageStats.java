@@ -163,27 +163,11 @@ public class ImageStats {
 		
 		int maxIntensity = forelen;
 		for (int i = forelen-1; i>0; i--) {
-			System.out.println(i);
-			System.out.println(deviationSet[i]);
 			if (foreground.deviationSet[i]<foreground.deviationSet[i-1]) {
 				maxIntensity = i;
 				break;
 			}
 		}
-		double poissonMaxStd = (poisson[0] +
-							   foreground.intensitySet[maxIntensity]*poisson[1] +
-							   Math.pow(foreground.intensitySet[maxIntensity],2)*poisson[2]);
-		double poissonMinStd = (poisson[0] +
-							   background.intensitySet[maxIntensity]*poisson[1] +
-							   Math.pow(background.intensitySet[maxIntensity],2)*poisson[2]);
-		
-		double poissonMax = foreground.intensitySet[maxIntensity] - 3*poissonMaxStd;
-		double poissonMin = background.intensitySet[maxIntensity] + 3*poissonMinStd;
-		
-		System.out.println("Poisson Max Intensity: " + Double.toString(poissonMax));
-		System.out.println("Poisson Max Standard Deviation: " + Double.toString(poissonMaxStd));
-		System.out.println("Poisson Min Intensity: " + Double.toString(poissonMin));
-		System.out.println("Poisson Min Standard Deviation: " + Double.toString(poissonMinStd));
 		
 		System.out.println("Exposure positions: " + Integer.toString(forelen));
 		System.out.println("Max exposure position: " + Integer.toString(maxIntensity));
@@ -266,11 +250,11 @@ public class ImageStats {
 
 	}
 
-	public Float getAverageSlope(int channel) {return averageSlope;}
+	public Float getAverageSlope() {return averageSlope;}
 
-	public Float getAverageR(int channel) {return averageR;}
+	public Float getAverageR() {return averageR;}
 
-	public Float getAverageIntercept(int channel) {return averageIntercept;}
+	public Float getAverageIntercept() {return averageIntercept;}
 
 	// Gets Absorption values from linear regression - Last edit -> NJS 2015-08-28
 	public ImagePlus getAbsorbance(ImageStats foreground, ImageStats background) {
