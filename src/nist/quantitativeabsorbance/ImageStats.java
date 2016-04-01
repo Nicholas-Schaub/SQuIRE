@@ -161,7 +161,7 @@ public class ImageStats {
 		System.out.println("B2: " + Float.toString(poisson[2]));
 		System.out.println("R^2: " + Float.toString(poisson[3]));
 		
-		int maxIntensity = forelen;
+		int maxIntensity = forelen-1;
 		for (int i = forelen-1; i>0; i--) {
 			if (foreground.deviationSet[i]<foreground.deviationSet[i-1]) {
 				maxIntensity = i;
