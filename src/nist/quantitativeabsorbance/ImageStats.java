@@ -36,11 +36,11 @@ public class ImageStats {
 	public float averageR;
 
 	// Variables for plotting global statistics
-	public float[] exposureSet;
-	public float[] intensitySet;
-	public float[] deviationSet;
-	public float[] maxPixelIntensity;
-	public float[] minPixelIntensity;
+	public double[] exposureSet;
+	public double[] intensitySet;
+	public double[] deviationSet;
+	public double[] maxPixelIntensity;
+	public double[] minPixelIntensity;
 
 	// Basic image and capture settings.
 	public String name;
@@ -94,6 +94,55 @@ public class ImageStats {
 		nSlices = rawImage.getNSlices();
 		nChannels = rawImage.getNChannels();
 	}
+	
+	public int nSamples() {
+		if (nFrames==1) {
+			return 0;
+		}
+		
+		getFrameDeviation();
+		double maxDev = 0;
+		for (int i = 0; i<deviationSet.length; i++) {
+			if (maxDev>deviationSet[i]) {
+				break;
+			} else {
+				maxDev = deviationSet[i];
+			}
+		}
+		return (int) (maxDev*maxDev);
+	}
+	
+	public double bestExposure() {
+		
+		getFrameDeviation();
+		CurveFitter cf = new CurveFitter((double[]) exposureSet,(double[]) intensitySet);
+		cf.doFit(0);
+		double[] curveFitParams = cf.getParams();
+		double maxDev = 0;
+		int pos = 0;
+		for (int i = 0; i<deviationSet.length; i++) {
+			if (maxDev>deviationSet[i]) {
+				pos = i-1;
+				break;
+			} else {
+				maxDev = deviationSet[i];
+			}
+		}
+		return ((maxPixelIntensity[pos]-3*maxDev - curveFitParams[0])/curveFitParams[1]);
+	}
+	
+	public int minConfPix(ImageStats foreground, int numExp) {
+		double sqrtN = Math.sqrt(numExp);
+		double error = 0.01;
+		double z = 1.96;
+		double sigma = sqrtN*error/z;
+		double thresh = Math.pow(10, -error*sqrtN/z);
+		double minPix = foreground.intensitySet[0];
+		double[] poisson = foreground.pseudoPoisson();
+		
+		
+		return 0;
+	}
 
 	// Performs linear regression on all pixels in an image - Last edit -> NJS 2015-08-28
 	public ImagePlus pixelLinReg(ImageStats foreground, ImageStats background) {
@@ -139,7 +188,7 @@ public class ImageStats {
 		int forelen = foreground.meanImage.getNSlices();
 		float[] dIntensity = new float[zlen];
 		double[] intensityFit;
-		float[] exposureRange = this.getExposureRange();
+		double[] exposureRange = this.getExposureRange();
 		double[] exposureFit;
 		int flen = width*height;
 		float[] cPixels = new float[flen]; //Holds pixel values of the image to perform regression on
@@ -154,12 +203,12 @@ public class ImageStats {
 		double[] curveFitParams = new double[2];
 		int j = 0;
 		int k = 0;
-		float[] poisson = new float[3];
+		double[] poisson = new double[4];
 		poisson = pseudoPoisson();
-		System.out.println("Intercept: " + Float.toString(poisson[0]));
-		System.out.println("B1: " + Float.toString(poisson[1]));
-		System.out.println("B2: " + Float.toString(poisson[2]));
-		System.out.println("R^2: " + Float.toString(poisson[3]));
+		System.out.println("Intercept: " + Double.toString(poisson[0]));
+		System.out.println("B1: " + Double.toString(poisson[1]));
+		System.out.println("B2: " + Double.toString(poisson[2]));
+		System.out.println("R^2: " + Double.toString(poisson[3]));
 		
 		int maxIntensity = forelen-1;
 		for (int i = forelen-1; i>0; i--) {
@@ -205,8 +254,8 @@ public class ImageStats {
 				IJ.log("Error in linear regression bounds estimation.\n" +
 						"This probably means the frames aren't in order of increasing exposure, \n" +
 						"or the background signal distribution overlaps the foreground signal distribution.");
-				IJ.log("Maximum foreground intensity: " + Float.toString(maxPixelIntensity[forelen-1]));
-				IJ.log("Maximum background intensity: " + Float.toString(background.maxPixelIntensity[forelen-1]));
+				IJ.log("Maximum foreground intensity: " + Double.toString(maxPixelIntensity[forelen-1]));
+				IJ.log("Maximum background intensity: " + Double.toString(background.maxPixelIntensity[forelen-1]));
 				IJ.log("Upper Intensity Bound: " + Double.toString(maxValue));
 				IJ.log("Lower Intesity Bound: " + Double.toString(minValue));
 				return new ImagePlus();
@@ -346,11 +395,11 @@ public class ImageStats {
 		ImagePlus imDeviationStats = new ImagePlus(channelLabel + " Standard Deviation",stdStack);
 		int frames = imMeanStats.getNSlices();
 
-		intensitySet = new float[frames];
-		deviationSet = new float[frames];
-		exposureSet = new float[frames]; //get range of exposure values and image mean pixel intensities
-		maxPixelIntensity = new float[frames];
-		minPixelIntensity = new float[frames];
+		intensitySet = new double[frames];
+		deviationSet = new double[frames];
+		exposureSet = new double[frames]; //get range of exposure values and image mean pixel intensities
+		maxPixelIntensity = new double[frames];
+		minPixelIntensity = new double[frames];
 		rawImage = IJ.createHyperStack(name+channelLabel, width, height, 1, numReplicates, frames, imagebitdepth);
 
 		for (int i=0; i<frames; i++) {
@@ -374,8 +423,8 @@ public class ImageStats {
 	// Create and return a plot of global pixel intensity versus exposure
 	public Plot plotGlobalIntensity() {
 		Plot intensityPlot = new Plot(getChannelLabel(),"Exposure time (ms)","Intensity");
-		float[] exposureRange = getExposureRange();
-		float[] intensityRange = getGlobalIntensity();
+		double[] exposureRange = getExposureRange();
+		double[] intensityRange = getGlobalIntensity();
 		intensityPlot.setLimits(0, exposureRange[exposureRange.length-1]*1.25, 0, intensityRange[intensityRange.length-1]*1.25);
 		intensityPlot.setColor(Color.RED);
 		intensityPlot.addPoints(exposureRange,intensityRange, Plot.CROSS);
@@ -457,10 +506,10 @@ public class ImageStats {
 		stdImage = new ImagePlus(name,stdStack);
 		meanImage = new ImagePlus(name,meanStack);
 		
-		maxPixelIntensity = new float[frames];
-		minPixelIntensity = new float[frames];
-		intensitySet = new float[frames];
-		deviationSet = new float[frames];
+		maxPixelIntensity = new double[frames];
+		minPixelIntensity = new double[frames];
+		intensitySet = new double[frames];
+		deviationSet = new double[frames];
 		for (int i=0; i<frames; i++){
 			meanImage.setPosition(i+1);
 			stdImage.setPosition(i+1);
@@ -492,28 +541,28 @@ public class ImageStats {
 
 	private String getChannelLabel() {return channelLabel;}
 
-	private float[] getExposureRange() {
+	private double[] getExposureRange() {
 		if (meanImage==null) {
 			getFrameMean();
 		}
-		exposureSet = new float[nFrames];
+		exposureSet = new double[nFrames];
 		for (int i = 0; i<nFrames; i++) {
 			exposureSet[i] = Float.parseFloat(meanImage.getImageStack().getSliceLabel(i+1));
 		}
 		return exposureSet;
 	}
 
-	public float[] getGlobalIntensity() {return intensitySet;}
+	public double[] getGlobalIntensity() {return intensitySet;}
 
 	// This method returns the global deviation values at each exposure for the indicated channel.
-	public float[] getDeviationSet() {return deviationSet;}
+	public double[] getDeviationSet() {return deviationSet;}
 
 	// This method returns the ImageStack containing the results of the linear regression for the indicated channel.
 	public ImageStack getSlopeImage() {
 		return slopeStats;
 	}
 	
-	public float[] pseudoPoisson() {
+	public double[] pseudoPoisson() {
 		if (meanImage==null || meanImage.getNSlices()!=nFrames) {
 			getFrameDeviationAndMean(rawImage);
 		}
@@ -536,11 +585,11 @@ public class ImageStats {
 		CurveFitter cf = new CurveFitter(iRegPixels,dRegPixels);
 		cf.doFit(1);
 		double[] curveFitParams = cf.getParams();
-		float[] params = new float[4];
-		params[0] = (float) curveFitParams[0];
-		params[1] = (float) curveFitParams[1];
-		params[2] = (float) curveFitParams[2];
-		params[3] = (float) cf.getRSquared();
+		double[] params = new double[4];
+		params[0] = curveFitParams[0];
+		params[1] = curveFitParams[1];
+		params[2] = curveFitParams[2];
+		params[3] = cf.getRSquared();
 		return params;
 	}
 

@@ -1,6 +1,7 @@
 package nist.quantitativeabsorbance;
 
 import ij.IJ;
+import ij.ImagePlus;
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -17,7 +18,6 @@ import nist.ij.log.Log;
 import nist.quantitativeabsorbance.guipanels.BenchmarkingPanel;
 import nist.quantitativeabsorbance.guipanels.ControlPanel;
 
-import org.apache.commons.math3.random.ISAACRandom;
 import org.micromanager.api.PositionList;
 import org.micromanager.api.ScriptInterface;
 import org.micromanager.utils.MMScriptException;
@@ -67,6 +67,7 @@ public class AppParams {
 	private static String plateID = "Plate ID";
 	private static ImageStats darkBlank = null;
 	private static ArrayList<ImageStats> lightBlank = new ArrayList<ImageStats>();
+	private static ArrayList<ImagePlus> foreground = new ArrayList<ImagePlus>();
 	private static boolean isAutomated = false;
 	private static String currentSampleName = "Undefined";
 	private static StrVector fluorescentDevice;
@@ -123,6 +124,7 @@ public class AppParams {
 	public static void setPlateID(String plateID) {AppParams.plateID = plateID;}
 	public static void setDarkBlank(ImageStats darkBlank) {AppParams.darkBlank = darkBlank;}
 	public static void addLightBlank(ImageStats lightBlank) {AppParams.lightBlank.add(lightBlank);}
+	public static void addForeground(ImagePlus foreground) {AppParams.foreground.add(foreground);}
 	
 	// Methods to get quantitative absorption thread settings. These are also used for benchmarking.
 	public static String getAPP_TITLE() {return "Quantitative Absorption GUI";}
@@ -136,6 +138,7 @@ public class AppParams {
 	public static String getPlateID() {return plateID;}
 	public static ImageStats getDarkBlank() {return darkBlank;}
 	public static ImageStats getLightBlank(int index) {return AppParams.lightBlank.get(index);}
+	public static ImagePlus getForeground(int index) {return AppParams.foreground.get(index);}
 	public static boolean getIsAutomated() {return isAutomated;}
 	public static String getCurrentSampleName() {return currentSampleName;}
 	
