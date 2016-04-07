@@ -135,6 +135,9 @@ public class BenchmarkingThread implements Runnable {
 				for(Double j : previousAbsorption) {sum += j;}
 				sum /= previousAbsorption.size();
 				
+				IJ.log("Ideal exposure: " + Double.toString(currentSample.bestExposure()));
+				IJ.log("Samples at ideal exposure: " + Integer.toString(currentSample.samplesForBlank(currentSample.bestExposure())));
+				
 				if(absorption.size()>=7) {
 					if ((Math.abs(Collections.max(previousAbsorption))<AppParams.getFluctuation()) && (Math.abs(sum)<AppParams.getEquilibrium())) {
 						markerColor = Color.LIGHT_GRAY;

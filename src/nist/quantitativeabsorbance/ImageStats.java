@@ -1,6 +1,7 @@
 package nist.quantitativeabsorbance;
 
 import java.awt.Color;
+import java.util.Arrays;
 
 import ij.IJ;
 import ij.ImagePlus;
@@ -95,40 +96,54 @@ public class ImageStats {
 		nChannels = rawImage.getNChannels();
 	}
 	
-	public int nSamples() {
+	public int samplesForBlank(double exposure) {
 		if (nFrames==1) {
 			return 0;
 		}
 		
 		getFrameDeviation();
 		double maxDev = 0;
+		int pos = 0;
 		for (int i = 0; i<deviationSet.length; i++) {
 			if (maxDev>deviationSet[i]) {
+				pos = i;
 				break;
 			} else {
 				maxDev = deviationSet[i];
 			}
 		}
-		return (int) (maxDev*maxDev);
+		
+		CurveFitter cf = new CurveFitter(Arrays.copyOfRange(exposureSet, 0, pos), Arrays.copyOfRange(intensitySet, 0, pos));
+		cf.doFit(0);
+		double[] curveFitParams = cf.getParams();
+		
+		double intensity = curveFitParams[0] + curveFitParams[1]*exposure;
+		
+		double[] poisson = this.pseudoPoisson();
+		
+		double deviation = poisson[0] + poisson[1]*intensity + poisson[2]*intensity*intensity;
+		
+		return (int) (deviation*deviation);
 	}
 	
 	public double bestExposure() {
 		
 		getFrameDeviation();
-		CurveFitter cf = new CurveFitter((double[]) exposureSet,(double[]) intensitySet);
-		cf.doFit(0);
-		double[] curveFitParams = cf.getParams();
 		double maxDev = 0;
 		int pos = 0;
 		for (int i = 0; i<deviationSet.length; i++) {
 			if (maxDev>deviationSet[i]) {
-				pos = i-1;
+				pos = i;
 				break;
 			} else {
 				maxDev = deviationSet[i];
 			}
 		}
-		return ((maxPixelIntensity[pos]-3*maxDev - curveFitParams[0])/curveFitParams[1]);
+		CurveFitter cf = new CurveFitter(Arrays.copyOfRange(exposureSet, 0, pos), Arrays.copyOfRange(maxPixelIntensity, 0, pos));
+		cf.doFit(0);
+		double[] curveFitParams = cf.getParams();
+		
+		return ((maxPixelIntensity[pos] - curveFitParams[0])/curveFitParams[1]);
 	}
 	
 	public int minConfPix(ImageStats foreground, int numExp) {
@@ -566,13 +581,23 @@ public class ImageStats {
 		if (meanImage==null || meanImage.getNSlices()!=nFrames) {
 			getFrameDeviationAndMean(rawImage);
 		}
+		double maxDev = 0;
+		int pos = 0;
+		for (int i = 0; i<deviationSet.length; i++) {
+			if (maxDev>deviationSet[i]) {
+				pos = i;
+				break;
+			} else {
+				maxDev = deviationSet[i];
+			}
+		}
 		int len = width*height;
-		int vol = len*(nFrames-1);
+		int vol = len*(pos);
 		float[] iPixels = new float[len];
 		float[] dPixels = new float[len];
 		double[] iRegPixels = new double[vol];
 		double[] dRegPixels = new double[vol];
-		for (int i=1;i<=nFrames-1;i++) {
+		for (int i=1;i<=pos;i++) {
 			meanImage.setPosition(i);
 			stdImage.setPosition(i);
 			iPixels = (float[]) meanImage.getProcessor().getPixels();
