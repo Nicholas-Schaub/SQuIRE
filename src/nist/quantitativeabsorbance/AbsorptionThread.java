@@ -20,6 +20,7 @@ public class AbsorptionThread implements Runnable {
 	private ImagePlus rawImage;
 	private ImagePlus absorbanceImage;
 	private ImageStats foreground;
+	private ImagePlus impForeground;
 	private ImageStats background;
 	
 	public AbsorptionThread(ImagePlus image, ImageStats foreground, int channelIndex) {
@@ -37,6 +38,20 @@ public class AbsorptionThread implements Runnable {
 		absImageDir = AppParams.getChannelImageDir(channelIndex);
 	}
 	
+	public AbsorptionThread(ImagePlus image, ImageStats slopeImage, ImagePlus foreground, int channelIndex) {
+		rawImage = image;
+		rawImageDir = AppParams.getRawImageDir(channelIndex);
+		saveRaw = AppParams.isSaveRawImages();
+		meanSaveDir = AppParams.getMeanImageDir(channelIndex);
+		saveMean = AppParams.isSaveMeanImages();
+		stdSaveDir = AppParams.getStdImageDir(channelIndex);
+		saveSTD = AppParams.isSaveStdImages();
+		this.foreground = slopeImage;
+		this.impForeground = foreground;
+		background = AppParams.getDarkBlank();
+		absImageDir = AppParams.getChannelImageDir(channelIndex);
+	}
+	
 	@Override
 	public void run() {
 		long startTime = System.currentTimeMillis();
@@ -46,9 +61,13 @@ public class AbsorptionThread implements Runnable {
 		checkAndSave(meanImage,saveMean,meanSaveDir);
 		stdImage = imStat.getFrameDeviation();
 		checkAndSave(stdImage,saveSTD,stdSaveDir);
-		slopeImage = imStat.pixelLinReg(foreground, background);
-		checkAndSave(slopeImage,saveSlope,slopeSaveDir);
-		absorbanceImage = imStat.getAbsorbance(foreground, background);
+		if (this.foreground!= null) {
+			slopeImage = imStat.pixelLinReg(foreground, background);
+			checkAndSave(slopeImage,saveSlope,slopeSaveDir);
+			absorbanceImage = imStat.getAbsorbance(foreground, background);
+		} else {
+			absorbanceImage = imStat.getAbsorbance(foreground, impForeground);
+		}
 		checkAndSave(absorbanceImage,true,absImageDir);
 		long stopTime = System.currentTimeMillis();
 		

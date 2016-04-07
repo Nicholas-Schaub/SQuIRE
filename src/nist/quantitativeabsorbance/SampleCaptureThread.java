@@ -119,12 +119,16 @@ public class SampleCaptureThread implements Runnable {
 							}
 							sampleLabel = channelName.get(j) + " - Light On Blank";
 							AppParams.setCurrentSampleName(sampleLabel);
-							currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,5)), numReplicates);
-							ImageStats lightStats = new ImageStats(currentSample);
+							ImageStats lightStats = new ImageStats(sampleLabel,"");
 							lightStats.pixelLinReg(lightStats, AppParams.getDarkBlank());
 							AppParams.addLightBlank(lightStats);
 							System.out.println("Added Light Blank!");
-							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j));
+							IJ.saveAsTiff(lightStats.rawImage, AppParams.getRawImageDir(j)+channelName.get(j)+"-LightBlank");
+							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j), lightStats.bestExposure(), lightStats.samplesForBlank(lightStats.bestExposure()));
+							ImageStats foreground = new ImageStats(foregroundRaw);
+							AppParams.addForeground(foreground.getFrameMean());
+							AppParams.setChannelExposure(j, foreground.bestExposure());
+							IJ.saveAsTiff(foreground.rawImage, AppParams.getRawImageDir(j)+channelName.get(j)+"-foreground");
 						}
 					}
 
@@ -191,7 +195,9 @@ public class SampleCaptureThread implements Runnable {
 								afm_.getDevice().fullFocus();*/
 							}
 							long startTime = System.currentTimeMillis();
-							currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,5)), numReplicates);
+							sampleStore = new ArrayList<ImagePlus>();
+							currentSample = cap.seriesCapture(sampleLabel, channelExposure.get(j), numReplicates);
+							//currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,5)), numReplicates);
 							long captureTime = System.currentTimeMillis(); 
 							System.out.print("Capture time: " + Long.toString(captureTime-startTime) + "\n");
 							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + sampleLabel);

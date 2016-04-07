@@ -54,6 +54,11 @@ public class ImageStats {
 	public int nFrames;
 	public int nSlices;
 	public int nChannels;
+	
+	// Properties related to images captured for absorption
+	double[] poisson;
+	int minimumPixInt;
+	double bestExp;
 
 	// Provides access to the Micro-Manager Core API (for direct hardware
 	// control)
@@ -127,6 +132,9 @@ public class ImageStats {
 	}
 	
 	public double bestExposure() {
+		if (bestExp!=0.0) {
+			return bestExp;
+		}
 		
 		getFrameDeviation();
 		double maxDev = 0;
@@ -146,17 +154,20 @@ public class ImageStats {
 		return ((maxPixelIntensity[pos] - curveFitParams[0])/curveFitParams[1]);
 	}
 	
-	public int minConfPix(ImageStats foreground, int numExp) {
+	public int minConfPix(int numExp) {
 		double sqrtN = Math.sqrt(numExp);
 		double error = 0.01;
 		double z = 1.96;
-		double sigma = sqrtN*error/z;
 		double thresh = Math.pow(10, -error*sqrtN/z);
-		double minPix = foreground.intensitySet[0];
-		double[] poisson = foreground.pseudoPoisson();
+		double[] poisson = pseudoPoisson();
+		double intensity = Math.pow(2, bitdepth)-1;
+		double check = 1 - (poisson[0]/intensity + poisson[1] + poisson[2]*intensity);
+		while (check > thresh || intensity<=0) {
+			intensity -= 1;
+			check = 1 - (poisson[0]/intensity + poisson[1] + poisson[2]*intensity);
+		}
 		
-		
-		return 0;
+		return (int) intensity;
 	}
 
 	// Performs linear regression on all pixels in an image - Last edit -> NJS 2015-08-28
@@ -321,6 +332,29 @@ public class ImageStats {
 	public Float getAverageIntercept() {return averageIntercept;}
 
 	// Gets Absorption values from linear regression - Last edit -> NJS 2015-08-28
+	public ImagePlus getAbsorbance(ImageStats slopeImage, ImagePlus foreground) {
+		FloatProcessor imageHolder = new FloatProcessor(width,height);
+		getFrameMean();
+		float[] fpixels = (float[]) foreground.getProcessor().getPixels();
+		float[] spixels;
+		float[] apixels = (float[]) imageHolder.getPixels();
+		int minPix = slopeImage.minConfPix(this.nSlices);
+		int maxPix = (int) foreground.getStatistics().max;
+		
+		for (int j = 0; j<rawImage.getNFrames(); j++) {
+			meanImage.setPosition(j);
+			spixels = (float[]) meanImage.getProcessor().getPixels();
+			for (int i=0; i<fpixels.length; i++) {
+				if (spixels[i]>=minPix && spixels[i]<=maxPix && apixels[i]==0) {
+					apixels[i] = (float) -Math.log10(spixels[i]/fpixels[i]);
+				}
+			}
+		}
+		imageHolder.setPixels(apixels);
+		absorbance = new ImagePlus("Absorbance",imageHolder);
+		return absorbance;
+	}
+	
 	public ImagePlus getAbsorbance(ImageStats foreground, ImageStats background) {
 		/*****************************************************************************************
 		 * This method performs determines the amount of absorption at each pixel for every		*
@@ -578,6 +612,9 @@ public class ImageStats {
 	}
 	
 	public double[] pseudoPoisson() {
+		if (poisson!=null) {
+			return poisson;
+		}
 		if (meanImage==null || meanImage.getNSlices()!=nFrames) {
 			getFrameDeviationAndMean(rawImage);
 		}
@@ -610,12 +647,12 @@ public class ImageStats {
 		CurveFitter cf = new CurveFitter(iRegPixels,dRegPixels);
 		cf.doFit(1);
 		double[] curveFitParams = cf.getParams();
-		double[] params = new double[4];
-		params[0] = curveFitParams[0];
-		params[1] = curveFitParams[1];
-		params[2] = curveFitParams[2];
-		params[3] = cf.getRSquared();
-		return params;
+		poisson = new double[4];
+		poisson[0] = curveFitParams[0];
+		poisson[1] = curveFitParams[1];
+		poisson[2] = curveFitParams[2];
+		poisson[3] = cf.getRSquared();
+		return poisson;
 	}
 
 }

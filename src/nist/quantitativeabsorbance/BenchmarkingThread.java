@@ -137,6 +137,9 @@ public class BenchmarkingThread implements Runnable {
 				
 				IJ.log("Ideal exposure: " + Double.toString(currentSample.bestExposure()));
 				IJ.log("Samples at ideal exposure: " + Integer.toString(currentSample.samplesForBlank(currentSample.bestExposure())));
+				for (int j=3; j<=15; j++) {
+					IJ.log("Minimum confident intensity " + Integer.toString(j) + ": " + Integer.toString(currentSample.minConfPix(j)));
+				}
 				
 				if(absorption.size()>=7) {
 					if ((Math.abs(Collections.max(previousAbsorption))<AppParams.getFluctuation()) && (Math.abs(sum)<AppParams.getEquilibrium())) {

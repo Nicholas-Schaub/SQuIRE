@@ -109,6 +109,7 @@ public class AppParams {
 	// Methods to set device hardware.
 	public static void setCurrentSampleName(String sampleName) {currentSampleName = sampleName;}
 	public static void useAutoShutter(boolean useShutter) {AppParams.useAutoShutter = useShutter;}
+	public static void setChannelExposure(int index, double exp) {AppParams.channelExposure.set(index, exp);}
 	public static void setFluorescentDevice(StrVector fluorescentDevice) {AppParams.fluorescentDevice = fluorescentDevice;}
 	public static void setFluorescentDeviceSetting(StrVector fluorescentDeviceSetting) {AppParams.fluorescentDeviceSetting = fluorescentDeviceSetting;}
 	public static void setTransmittedDevice(StrVector transmittedDevice) {AppParams.transmittedDevice = transmittedDevice;}
@@ -251,7 +252,7 @@ public class AppParams {
 				transmittedDevice.add((String) automatedSettings[i][4]);
 				transmittedDeviceSetting.add((String) automatedSettings[i][5]);
 				if (automatedSettings[i][6].equals("")) {
-					channelExposure.add(0);
+					channelExposure.add(1);
 				} else {
 					channelExposure.add(Double.parseDouble(automatedSettings[i][6].toString()));
 				}
