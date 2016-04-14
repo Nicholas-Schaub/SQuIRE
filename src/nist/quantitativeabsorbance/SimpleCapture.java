@@ -2,8 +2,10 @@ package nist.quantitativeabsorbance;
 
 import ij.IJ;
 import ij.ImagePlus;
-import ij.ImageStack;
 import ij.gui.NewImage;
+
+import java.util.ArrayList;
+
 import mmcorej.CMMCore;
 
 public class SimpleCapture {
@@ -54,6 +56,31 @@ public class SimpleCapture {
 		return imageSeries;
 	}
 	
+	public ImagePlus threshCaptureSeries(String imgName, double exp, int replicates,int thresh){
+		ArrayList<ImagePlus> captureSeries = new ArrayList<ImagePlus>();
+		captureSeries.add(seriesCapture(imgName,exp,replicates));
+		int index = 0;
+		ImageStats temp = new ImageStats(captureSeries.get(0));
+		double min = temp.getFrameMean().getStatistics().min;
+		while (min<thresh) {
+			index++;
+			captureSeries.add(seriesCapture(imgName,exp*Math.pow(2, index),replicates));
+			temp = new ImageStats(captureSeries.get(index));
+			min = temp.getFrameMean().getStatistics().min;
+		}
+		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, captureSeries.size(), bitDepth);
+		for (int i=1; i<=captureSeries.size(); i++) {
+			for (int j=1; j<=replicates; j++) {
+				imageSeries.setPosition(1,j,i);
+				captureSeries.get(i-1).setPosition(j);
+				imageSeries.getProcessor().setPixels(captureSeries.get(i-1).getProcessor().getPixels());
+				imageSeries.getStack().setSliceLabel(captureSeries.get(i-1).getStack().getSliceLabel(j), imageSeries.getCurrentSlice());
+			}
+		}
+		imageSeries.setPosition(1,1,1);
+		return imageSeries;
+	}
+	
 	public ImagePlus seriesCapture(String imgName, double exposure, int replicates) {
 		
 		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, 1, bitDepth);
@@ -81,7 +108,7 @@ public class SimpleCapture {
 				for (int j = 0; j<remainingImages; j++) {
 					imageSeries.setPosition(1, ++currentSlice, 1);
 					imageSeries.getProcessor().setPixels(core_.popNextImage());
-					imageSeries.getStack().setSliceLabel(Double.toString(exposure), currentSlice);
+					imageSeries.getStack().setSliceLabel(Double.toString(core_.getExposure()), currentSlice);
 				}
 			}
 			

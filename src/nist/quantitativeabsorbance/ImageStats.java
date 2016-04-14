@@ -147,6 +147,11 @@ public class ImageStats {
 				maxDev = deviationSet[i];
 			}
 		}
+		if (exposureSet==null) {
+			getFrameMean();
+		}
+		System.out.println(exposureSet[0]);
+		System.out.println(pos);
 		CurveFitter cf = new CurveFitter(Arrays.copyOfRange(exposureSet, 0, pos), Arrays.copyOfRange(maxPixelIntensity, 0, pos));
 		cf.doFit(0);
 		double[] curveFitParams = cf.getParams();
@@ -342,16 +347,16 @@ public class ImageStats {
 		int maxPix = (int) foreground.getStatistics().max;
 		
 		for (int j = 0; j<rawImage.getNFrames(); j++) {
-			meanImage.setPosition(j);
+			meanImage.setPosition(j+1);
 			spixels = (float[]) meanImage.getProcessor().getPixels();
 			for (int i=0; i<fpixels.length; i++) {
 				if (spixels[i]>=minPix && spixels[i]<=maxPix && apixels[i]==0) {
-					apixels[i] = (float) -Math.log10(spixels[i]/fpixels[i]);
+					apixels[i] = (float) -Math.log10(spixels[i]/(fpixels[i]*(Math.pow(2, j))));
 				}
 			}
 		}
 		imageHolder.setPixels(apixels);
-		absorbance = new ImagePlus("Absorbance",imageHolder);
+		absorbance = new ImagePlus(name,imageHolder);
 		return absorbance;
 	}
 	

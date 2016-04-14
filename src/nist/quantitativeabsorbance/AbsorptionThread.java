@@ -61,7 +61,7 @@ public class AbsorptionThread implements Runnable {
 		checkAndSave(meanImage,saveMean,meanSaveDir);
 		stdImage = imStat.getFrameDeviation();
 		checkAndSave(stdImage,saveSTD,stdSaveDir);
-		if (this.foreground!= null) {
+		if (this.impForeground==null) {
 			slopeImage = imStat.pixelLinReg(foreground, background);
 			checkAndSave(slopeImage,saveSlope,slopeSaveDir);
 			absorbanceImage = imStat.getAbsorbance(foreground, background);

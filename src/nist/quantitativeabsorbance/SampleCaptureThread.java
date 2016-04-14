@@ -127,7 +127,7 @@ public class SampleCaptureThread implements Runnable {
 							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j), lightStats.bestExposure(), lightStats.samplesForBlank(lightStats.bestExposure()));
 							ImageStats foreground = new ImageStats(foregroundRaw);
 							AppParams.addForeground(foreground.getFrameMean());
-							AppParams.setChannelExposure(j, foreground.bestExposure());
+							AppParams.setChannelExposure(j, lightStats.bestExposure());
 							IJ.saveAsTiff(foreground.rawImage, AppParams.getRawImageDir(j)+channelName.get(j)+"-foreground");
 						}
 					}
@@ -169,6 +169,14 @@ public class SampleCaptureThread implements Runnable {
 					
 					for (int j = 0; j<numChannels; j++) {
 						AppParams.setCurrentSampleName(sampleLabel);
+						if (channelOffset.get(j)!=0 && j!=0) {
+							core_.setRelativePosition(channelOffset.get(j));
+						}
+						core_.waitForSystem();
+						if (j==0){
+							System.out.print("Focusing...");
+							afm_.getDevice().fullFocus();
+						}
 						if (absorptionSetting.get(j).equals("Absorbance")){
 							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
 								core_.setShutterOpen(false);
@@ -179,31 +187,23 @@ public class SampleCaptureThread implements Runnable {
 								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 							}
-							if (channelOffset.get(j)!=0 && j!=0) {
-								core_.setRelativePosition(channelOffset.get(j));
-							}
 							core_.waitForSystem();
 							while (!core_.getProperty(fluorescentDevice.get(j), "Label").equalsIgnoreCase(fluorescentDeviceSetting.get(j)) ||
 									!core_.getProperty(transmittedDevice.get(j), "Label").equalsIgnoreCase(transmittedDeviceSetting.get(j))){
+								System.out.println("Didn't get the right brightfield, trying again...");
 								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 								core_.waitForSystem();
 							}
-							if (j==0){
-								System.out.print("Focusing...");
-								/*afm_.getDevice().setPropertyValue("Exposure", Double.toString(4*channelExposure.get(j)));
-								afm_.getDevice().fullFocus();*/
-							}
 							long startTime = System.currentTimeMillis();
-							sampleStore = new ArrayList<ImagePlus>();
-							currentSample = cap.seriesCapture(sampleLabel, channelExposure.get(j), numReplicates);
+							currentSample = cap.threshCaptureSeries(sampleLabel, channelExposure.get(j), numReplicates, AppParams.getLightBlank(currentAbsorb).minConfPix(numReplicates));
 							//currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,5)), numReplicates);
 							long captureTime = System.currentTimeMillis(); 
 							System.out.print("Capture time: " + Long.toString(captureTime-startTime) + "\n");
 							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + sampleLabel);
 							long saveTime = System.currentTimeMillis();
 							System.out.print("Save time: " + Long.toString(saveTime - captureTime) + "\n");
-							Thread absorptionThread = new Thread(new AbsorptionThread(currentSample,AppParams.getLightBlank(currentAbsorb++),j));
+							Thread absorptionThread = new Thread(new AbsorptionThread(currentSample,AppParams.getLightBlank(currentAbsorb),AppParams.getForeground(currentAbsorb++),j));
 							absorptionThread.start();
 							long threadTime = System.currentTimeMillis();
 							System.out.print("Thread initiation time: " + Long.toString(threadTime - saveTime) + "\n");
@@ -218,10 +218,12 @@ public class SampleCaptureThread implements Runnable {
 							core_.waitForSystem();
 							while (!core_.getProperty(fluorescentDevice.get(j), "Label").equalsIgnoreCase(fluorescentDeviceSetting.get(j)) ||
 									!core_.getProperty(transmittedDevice.get(j), "Label").equalsIgnoreCase(transmittedDeviceSetting.get(j))){
+								System.out.println("Didn't get the right phase, trying again...");
 								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 								core_.waitForSystem();
 							}
+
 							currentSample = cap.singleCapture(sampleLabel,channelExposure.get(j));
 							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						} else {
