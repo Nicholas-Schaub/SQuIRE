@@ -31,9 +31,9 @@ public class SampleCaptureThread implements Runnable {
 	private DoubleVector channelExposure;
 	private DoubleVector channelOffset;
 	private int numChannels;
-	private int minExposure = (int) AppParams.getMinExposure();
-	private int maxExposure = (int) AppParams.getMaxExposure();
 	private int numReplicates = AppParams.getNumReplicates();
+	
+	private boolean usePreviousCalibration;
 	
     public void run() {
 		AppParams params = AppParams.getInstance();
@@ -48,6 +48,19 @@ public class SampleCaptureThread implements Runnable {
 		channelExposure = AppParams.getChannelExposures();
 		channelOffset = AppParams.getChannelOffset();
 		numChannels = AppParams.getChannels();
+		usePreviousCalibration = AppParams.usePreviousCalibration();
+		
+		int start = 0;
+		
+		if (usePreviousCalibration) {
+			start = 2;
+			for (int j = 0; j<numChannels; j++) {
+				IJ.saveAsTiff(AppParams.getLightBlank(j).rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LinReg");
+				IJ.saveAsTiff(AppParams.getForeground(j), AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LightBlank");
+				IJ.saveAsTiff(AppParams.getDarkBlank().rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-DarkBlank");
+				AppParams.setChannelExposure(j, AppParams.getLightBlank(j).bestExposure());
+			}
+		}
 		
 		try {
 			AutofocusManager afm_ = app_.getAutofocusManager();
@@ -58,11 +71,16 @@ public class SampleCaptureThread implements Runnable {
 			}
 			
 			if (AppParams.hasAutoShutter()) {
-				core_.setShutterOpen(false);
+				core_.setShutterDevice(AppParams.getTransmittedShutter());
+				if (usePreviousCalibration) {
+					core_.setShutterOpen(true);
+				} else {
+					core_.setShutterOpen(false);
+				}
 			}
 			
 			// Collect stats for each pixel in each channel at multiple exposures.
-			for (int i=0; i<AppParams.getNumSamples()+2; i++) {
+			for (int i=start; i<AppParams.getNumSamples()+2; i++) {
 				if (i==0) {
 					
 					if (!AppParams.getIsAutomated()) {
@@ -89,7 +107,7 @@ public class SampleCaptureThread implements Runnable {
 					IJ.saveAsTiff(currentSample, AppParams.getCoreSaveDir()+currentSample.getTitle());
 				} else if (i==1) {
 					
-					if (AppParams.hasAutoShutter() && !AppParams.useAutoShutter()) {
+					if (AppParams.hasAutoShutter()) {
 						core_.setShutterDevice(AppParams.getTransmittedShutter());
 						core_.setShutterOpen(true);
 					}
@@ -123,12 +141,13 @@ public class SampleCaptureThread implements Runnable {
 							lightStats.pixelLinReg(lightStats, AppParams.getDarkBlank());
 							AppParams.addLightBlank(lightStats);
 							System.out.println("Added Light Blank!");
-							IJ.saveAsTiff(lightStats.rawImage, AppParams.getRawImageDir(j)+channelName.get(j)+"-LightBlank");
+							IJ.saveAsTiff(lightStats.rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LinReg");
 							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j), lightStats.bestExposure(), lightStats.samplesForBlank(lightStats.bestExposure()));
 							ImageStats foreground = new ImageStats(foregroundRaw);
 							AppParams.addForeground(foreground.getFrameMean());
 							AppParams.setChannelExposure(j, lightStats.bestExposure());
-							IJ.saveAsTiff(foreground.rawImage, AppParams.getRawImageDir(j)+channelName.get(j)+"-foreground");
+							IJ.saveAsTiff(foreground.rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LightBlank");
+							IJ.saveAsTiff(AppParams.getDarkBlank().rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-DarkBlank");
 						}
 					}
 
@@ -169,24 +188,22 @@ public class SampleCaptureThread implements Runnable {
 					
 					for (int j = 0; j<numChannels; j++) {
 						AppParams.setCurrentSampleName(sampleLabel);
-						if (channelOffset.get(j)!=0 && j!=0) {
+						if (j==0){
+						System.out.print("Focusing...");
+							afm_.getDevice().fullFocus();
+						}
+						if (channelOffset.get(j)!=0) {
 							core_.setRelativePosition(channelOffset.get(j));
 						}
 						core_.waitForSystem();
-						if (j==0){
-							System.out.print("Focusing...");
-							afm_.getDevice().fullFocus();
-						}
 						if (absorptionSetting.get(j).equals("Absorbance")){
 							if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
 								core_.setShutterOpen(false);
 								core_.setShutterDevice(AppParams.getTransmittedShutter());
 								core_.setShutterOpen(true);
 							}
-							if (j!=0) {
-								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-							}
+							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 							core_.waitForSystem();
 							while (!core_.getProperty(fluorescentDevice.get(j), "Label").equalsIgnoreCase(fluorescentDeviceSetting.get(j)) ||
 									!core_.getProperty(transmittedDevice.get(j), "Label").equalsIgnoreCase(transmittedDeviceSetting.get(j))){
@@ -195,6 +212,7 @@ public class SampleCaptureThread implements Runnable {
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 								core_.waitForSystem();
 							}
+
 							long startTime = System.currentTimeMillis();
 							currentSample = cap.threshCaptureSeries(sampleLabel, channelExposure.get(j), numReplicates, AppParams.getLightBlank(currentAbsorb).minConfPix(numReplicates));
 							//currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,5)), numReplicates);
@@ -203,7 +221,7 @@ public class SampleCaptureThread implements Runnable {
 							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + sampleLabel);
 							long saveTime = System.currentTimeMillis();
 							System.out.print("Save time: " + Long.toString(saveTime - captureTime) + "\n");
-							Thread absorptionThread = new Thread(new AbsorptionThread(currentSample,AppParams.getLightBlank(currentAbsorb),AppParams.getForeground(currentAbsorb++),j));
+							Thread absorptionThread = new Thread(new AbsorptionThread(currentSample,j));
 							absorptionThread.start();
 							long threadTime = System.currentTimeMillis();
 							System.out.print("Thread initiation time: " + Long.toString(threadTime - saveTime) + "\n");
@@ -223,7 +241,6 @@ public class SampleCaptureThread implements Runnable {
 								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 								core_.waitForSystem();
 							}
-
 							currentSample = cap.singleCapture(sampleLabel,channelExposure.get(j));
 							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						} else {

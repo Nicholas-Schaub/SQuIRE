@@ -33,7 +33,7 @@ public class AppParams {
 	
 	// Microscope hardware configuration
 	private static boolean hasAutoShutter;
-	private static boolean useAutoShutter = false;
+	private static boolean usePreviousCalibration = false;
 	private static StrVector stateDevices;
 	private static StrVector shutterDevices;
 	
@@ -43,13 +43,11 @@ public class AppParams {
 	private static StrVector rawImageDir;
 	private static StrVector meanImageDir;
 	private static StrVector stdImageDir;
-	private static StrVector linearRegressionDir;
+	private static StrVector calibrationImageDir;
 	private static StrVector channelImageDir;
 	private static boolean saveRawImages = false;
 	private static boolean saveMeanImages = false;
 	private static boolean saveStdImages = false;
-	private static boolean saveLinearRegression = false;
-	private static boolean saveSlopeImage = false;
 	private static boolean saveBenchmarkingExcel = false; //benchmarking
 	private static boolean saveBenchmarkingTxt = false; //benchmarking
 	
@@ -59,7 +57,6 @@ public class AppParams {
 	private static int channels = 1;
 	private static int numReplicates = 3;
 	private static int numSamples = 5;
-	private static PositionList automatedPositionList;
 	private static final AppParams INSTANCE = new AppParams();
 	private Thread thread;
 	private volatile boolean stopThread = false;
@@ -89,7 +86,7 @@ public class AppParams {
 	
 	// Methods to get device hardware.
 	public static boolean hasAutoShutter() {return hasAutoShutter;}
-	public static boolean useAutoShutter() {return useAutoShutter;}
+	public static boolean usePreviousCalibration() {return usePreviousCalibration;}
 	public static StrVector getStateDevices() {return stateDevices;}
 	public static StrVector getDeviceStates(String stateDevice) throws Exception {
 		return core_.getAllowedPropertyValues(stateDevice,"Label");
@@ -108,7 +105,7 @@ public class AppParams {
 	
 	// Methods to set device hardware.
 	public static void setCurrentSampleName(String sampleName) {currentSampleName = sampleName;}
-	public static void useAutoShutter(boolean useShutter) {AppParams.useAutoShutter = useShutter;}
+	public static void usePreviousCalibration(boolean usePrevious) {AppParams.usePreviousCalibration = usePrevious;}
 	public static void setChannelExposure(int index, double exp) {AppParams.channelExposure.set(index, exp);}
 	public static void setFluorescentDevice(StrVector fluorescentDevice) {AppParams.fluorescentDevice = fluorescentDevice;}
 	public static void setFluorescentDeviceSetting(StrVector fluorescentDeviceSetting) {AppParams.fluorescentDeviceSetting = fluorescentDeviceSetting;}
@@ -161,14 +158,12 @@ public class AppParams {
 	public static boolean isSaveRawImages() {return saveRawImages;}
 	public static boolean isSaveMeanImages() {return saveMeanImages;}
 	public static boolean isSaveStdImages() {return saveStdImages;}
-	public static boolean isLinearRegression() {return saveLinearRegression;}
-	public static boolean isSaveSlopeImage() {return saveSlopeImage;}
 	public static String getCoreSaveDir() {return coreSaveDir;}
 	public static String getOutDir() {return outDir;}
 	public static String getRawImageDir(int index) {return rawImageDir.get(index);}
 	public static String getMeanImageDir(int index) {return meanImageDir.get(index);}
 	public static String getStdImageDir(int index) {return stdImageDir.get(index);}
-	public static String getLinearRegressionDir(int index) {return linearRegressionDir.get(index);}
+	public static String getCalibrationImageDir(int index) {return calibrationImageDir.get(index);}
 	public static String getChannelImageDir(int index) {return channelImageDir.get(index);}
 	
 	// Methods to set save settings
@@ -182,8 +177,24 @@ public class AppParams {
 	
 	public void start(Object callSource) throws Exception {
 		// TODO Auto-generated method stub
-		AppParams.lightBlank = new ArrayList<ImageStats>();
+
 		pullParamsFromGui(callSource);
+		
+		if (!usePreviousCalibration) {
+			AppParams.lightBlank = new ArrayList<ImageStats>();
+			AppParams.foreground = new ArrayList<ImagePlus>();
+			usePreviousCalibration = false;
+		} else if (AppParams.lightBlank==null || AppParams.foreground==null || AppParams.darkBlank==null) {
+			IJ.error("Could not find previous calibration settings, recapturing calibration images.");
+			AppParams.lightBlank = new ArrayList<ImageStats>();
+			AppParams.foreground = new ArrayList<ImagePlus>();
+			usePreviousCalibration = false;
+		} else if (AppParams.lightBlank.size()!=channels) {
+			IJ.error("The number of channels does not match the number of calibration sets. Will recapture calibration images.");
+			AppParams.lightBlank = new ArrayList<ImageStats>();
+			AppParams.foreground = new ArrayList<ImagePlus>();
+			usePreviousCalibration = false;
+		}
 		
 		recordPreferences();
 		
@@ -226,9 +237,7 @@ public class AppParams {
 		saveRawImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveRawImages();
 		saveMeanImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveMeanImages();
 		saveStdImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveStdImages();
-		saveLinearRegression = QuantitativeAbsorptionGUI.getControlPanel().getSaveLinearRegression();
-		saveSlopeImage = QuantitativeAbsorptionGUI.getControlPanel().getSaveSlopeImage();
-		useAutoShutter = QuantitativeAbsorptionGUI.getControlPanel().useAutoShutter();
+		usePreviousCalibration = QuantitativeAbsorptionGUI.getControlPanel().usePreviousCalibration();
 		fluorescentShutter = QuantitativeAbsorptionGUI.getControlPanel().getFluorescentShutter();
 		transmittedShutter = QuantitativeAbsorptionGUI.getControlPanel().getTransmittedShutter();
 		
@@ -294,26 +303,22 @@ public class AppParams {
 					rawImageDir = new StrVector();
 					meanImageDir = new StrVector();
 					stdImageDir = new StrVector();
-					linearRegressionDir = new StrVector();
+					calibrationImageDir = new StrVector();
 					for (int i = 0; i<channels; i++) {
 						channelImageDir.add(outDir + File.separator + channelName.get(i) + File.separator);
 						rawImageDir.add(channelImageDir.get(i) + "Raw Images" + File.separator);
 						meanImageDir.add(channelImageDir.get(i) + "Mean Images" + File.separator);
 						stdImageDir.add(channelImageDir.get(i) + "Std Images" + File.separator);
-						linearRegressionDir.add(channelImageDir.get(i) + "Linear Regression Images" + File.separator);
+						calibrationImageDir.add(channelImageDir.get(i) + "Calibration Images" + File.separator);
 						new File(channelImageDir.get(i)).mkdir();
 						if (absorptionSetting.get(i).equals("Absorbance")) {
-							if (saveRawImages) {
-								new File(rawImageDir.get(i)).mkdir();
-							}
+							new File(calibrationImageDir.get(i)).mkdir();
+							new File(rawImageDir.get(i)).mkdir();
 							if (saveMeanImages) {
 								new File(meanImageDir.get(i)).mkdir();
 							}
 							if (saveStdImages) {
 								new File(stdImageDir.get(i)).mkdir();
-							}
-							if (saveLinearRegression) {
-								new File(linearRegressionDir.get(i)).mkdir();
 							}
 						}
 					}
@@ -385,9 +390,7 @@ public class AppParams {
 		pref.putBoolean("saveRawImages", saveRawImages);
 		pref.putBoolean("saveMeanImages", saveMeanImages);
 		pref.putBoolean("saveStdImages", saveStdImages);
-		pref.putBoolean("saveLinearRegression", saveLinearRegression);
-		pref.putBoolean("saveSlopeImage", saveSlopeImage);
-		pref.putBoolean("useAutoShutter", useAutoShutter);
+		pref.putBoolean("usePreviousCalibration", usePreviousCalibration);
 
 		try
 		{
@@ -421,9 +424,7 @@ public class AppParams {
 		saveRawImages = pref.getBoolean("saveRawImages", saveRawImages);
 		saveMeanImages = pref.getBoolean("saveMeanImages", saveMeanImages);
 		saveStdImages = pref.getBoolean("saveStdImages", saveStdImages);
-		saveLinearRegression = pref.getBoolean("saveLinearRegression", saveLinearRegression);
-		saveSlopeImage = pref.getBoolean("saveSlopeImage", saveSlopeImage);
-		useAutoShutter = pref.getBoolean("useAutoShutter", useAutoShutter);
+		usePreviousCalibration = pref.getBoolean("useAutoShutter", usePreviousCalibration);
 	}
 	
 	public static void updateStatus(double percentComplete) {QuantitativeAbsorptionGUI.getControlPanel().updateStatus(percentComplete);}

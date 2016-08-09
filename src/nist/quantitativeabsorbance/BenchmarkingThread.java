@@ -68,13 +68,11 @@ public class BenchmarkingThread implements Runnable {
 	  	    		  "Turn on the bright field light or open the shutter.",
 	  	    		  "Quantitative Absorption Plugin",
 	  	    		  JOptionPane.PLAIN_MESSAGE);
-			} else if (!AppParams.useAutoShutter()) {
-				AppParams.getApp_().getMMCore().setShutterOpen(true);
-				Thread.sleep(100);
 			}
 			
 			IJ.log("Getting first image...");
   	      	AppParams.setForceMax(false);
+  	      	AppParams.getApp_().getMMCore().setShutterOpen(true);
   	      	AppParams.setCurrentSampleName("Initial Background");
 			currentSample = new ImageStats("Initial Background","");
 			

@@ -60,7 +60,7 @@ implements ActionListener
 	// General Capture Settings
 	private JPanel generalSettingsPanel;
 	private TextFieldInputPanel<Double> minExposureInput;
-	private JCheckBox useAutoShutter;
+	private JCheckBox usePreviousCalibration;
 	private TextFieldInputPanel<Double> maxExposureInput;
 	private TextFieldInputPanel<Integer> numReplicatesInput;
 	private TextFieldInputPanel<String> plateIdInput;
@@ -71,8 +71,6 @@ implements ActionListener
 	private JCheckBox saveRawImages;
 	private JCheckBox saveMeanImages;
 	private JCheckBox saveStdImages;
-	private JCheckBox saveLinearRegression;
-	private JCheckBox saveSlopeImage;
 	
 	// Manual Capture Settings
 	private JPanel manualSettingsPanel;
@@ -131,10 +129,10 @@ implements ActionListener
 		generalSettingsPanel.setBorder(BorderFactory.createTitledBorder("General Settings"));
 			plateIdInput = new TextFieldInputPanel("Sample Name: ", AppParams.getPlateID(), new ValidatorPrefix());
 			plateIdInput.setToolTipText("<html>Please enter the name of the sample (used for saving files).</html>");
-			useAutoShutter = new JCheckBox();
-			useAutoShutter.setSelected(AppParams.useAutoShutter());
-			if (!AppParams.hasAutoShutter()) useAutoShutter.setEnabled(false);
-			useAutoShutter.setText("Close Shutter Between Captures");
+			usePreviousCalibration = new JCheckBox();
+			usePreviousCalibration.setSelected(AppParams.usePreviousCalibration());
+			if (!AppParams.hasAutoShutter()) usePreviousCalibration.setEnabled(false);
+			usePreviousCalibration.setText("Use Previous Runs Calibrations");
 			numReplicatesInput = new TextFieldInputPanel("Number of replicates at each exposure: ", Integer.toString(AppParams.getNumReplicates()), new ValidatorInt(0,53));
 			numReplicatesInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
 			minExposureInput = new TextFieldInputPanel("Minimum Exposure (ms): ", Double.toString(AppParams.getMinExposure()), new ValidatorDbl(0.001,503));
@@ -156,12 +154,6 @@ implements ActionListener
 			saveStdImages = new JCheckBox();
 			saveStdImages.setText("Save Std Images");
 			saveStdImages.setSelected(AppParams.isSaveStdImages());
-			saveLinearRegression = new JCheckBox();
-			saveLinearRegression.setText("Save Linear Regression Stack");
-			saveLinearRegression.setSelected(AppParams.isLinearRegression());
-			saveSlopeImage = new JCheckBox();
-			saveSlopeImage.setText("Save Slope Image");
-			saveSlopeImage.setSelected(AppParams.isSaveSlopeImage());
 
 		// Manual Settings Panel
 		manualSettingsPanel = new JPanel(new GridBagLayout());
@@ -284,7 +276,7 @@ implements ActionListener
 		c.gridx = 0;
 		generalSettingsPanel.add(plateIdInput,c);
 		c.gridx++;
-		generalSettingsPanel.add(useAutoShutter,c);
+		generalSettingsPanel.add(usePreviousCalibration,c);
 		c.gridx = 0;
 		c.gridwidth = 2;
 		c.gridy++;
@@ -554,9 +546,9 @@ implements ActionListener
 	
 	public String getTransmittedShutter() {return transmittedShutter.getSelectedItem().toString();}
 	
-	public boolean useAutoShutter() {return useAutoShutter.isSelected();}
+	public boolean usePreviousCalibration() {return usePreviousCalibration.isSelected();}
 	
-	public void setAutoShutter(boolean setShutter) {useAutoShutter.setSelected(setShutter);}
+	public void setUsePreviousCalibration(boolean setShutter) {usePreviousCalibration.setSelected(setShutter);}
 	
 	public void updateStatus(double percentComplete) {captureProgressBar.setValue((int)(percentComplete * 100.0D));}
 	
@@ -573,14 +565,6 @@ implements ActionListener
 	public boolean getSaveStdImages() {return saveStdImages.isSelected();}
 	
 	public void setSaveStdImages(boolean saveStd) {saveStdImages.setSelected(saveStd);}
-	
-	public boolean getSaveLinearRegression() {return saveLinearRegression.isSelected();}
-	
-	public void setSaveLinearRegression(boolean saveLinear) {saveLinearRegression.setSelected(saveLinear);}
-	
-	public boolean getSaveSlopeImage() {return saveSlopeImage.isSelected();}
-	
-	public void setSaveSlopeImage(boolean saveSlope) {saveSlopeImage.setSelected(saveSlope);}
 	
 	public String getCoreSaveDirectory() {return outputDirectory.getValue();}
 	

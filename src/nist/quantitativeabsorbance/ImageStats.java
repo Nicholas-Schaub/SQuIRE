@@ -59,6 +59,7 @@ public class ImageStats {
 	double[] poisson;
 	int minimumPixInt;
 	double bestExp;
+	double bestExpIntensity;
 
 	// Provides access to the Micro-Manager Core API (for direct hardware
 	// control)
@@ -156,7 +157,19 @@ public class ImageStats {
 		cf.doFit(0);
 		double[] curveFitParams = cf.getParams();
 		
+		bestExp = ((maxPixelIntensity[pos] - curveFitParams[0])/curveFitParams[1]);
+		bestExpIntensity = curveFitParams[0] + curveFitParams[1]*bestExp;
+		
 		return ((maxPixelIntensity[pos] - curveFitParams[0])/curveFitParams[1]);
+	}
+	
+	public double bestExposureIntensity() {
+		if (bestExpIntensity!=0.0) {
+			return bestExpIntensity;
+		} else {
+			bestExposure();
+			return bestExpIntensity;
+		}
 	}
 	
 	public int minConfPix(int numExp) {
@@ -165,7 +178,7 @@ public class ImageStats {
 		double z = 1.96;
 		double thresh = Math.pow(10, -error*sqrtN/z);
 		double[] poisson = pseudoPoisson();
-		double intensity = Math.pow(2, bitdepth)-1;
+		double intensity = bestExposureIntensity();
 		double check = 1 - (poisson[0]/intensity + poisson[1] + poisson[2]*intensity);
 		while (check > thresh || intensity<=0) {
 			intensity -= 1;
@@ -337,10 +350,11 @@ public class ImageStats {
 	public Float getAverageIntercept() {return averageIntercept;}
 
 	// Gets Absorption values from linear regression - Last edit -> NJS 2015-08-28
-	public ImagePlus getAbsorbance(ImageStats slopeImage, ImagePlus foreground) {
+	public ImagePlus getAbsorbance(ImageStats slopeImage, ImagePlus foreground, ImageStats background) {
 		FloatProcessor imageHolder = new FloatProcessor(width,height);
 		getFrameMean();
 		float[] fpixels = (float[]) foreground.getProcessor().getPixels();
+		float[] bpixels = (float[]) background.getFrameMean().getProcessor().getPixels();
 		float[] spixels;
 		float[] apixels = (float[]) imageHolder.getPixels();
 		int minPix = slopeImage.minConfPix(this.nSlices);
@@ -351,7 +365,7 @@ public class ImageStats {
 			spixels = (float[]) meanImage.getProcessor().getPixels();
 			for (int i=0; i<fpixels.length; i++) {
 				if (spixels[i]>=minPix && spixels[i]<=maxPix && apixels[i]==0) {
-					apixels[i] = (float) -Math.log10(spixels[i]/(fpixels[i]*(Math.pow(2, j))));
+					apixels[i] = (float) -Math.log10((spixels[i]-bpixels[i])/((fpixels[i]-bpixels[i])*(Math.pow(2, j))));
 				}
 			}
 		}
