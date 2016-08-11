@@ -20,7 +20,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
@@ -28,12 +27,6 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 
-import org.jdesktop.swingx.MultiSplitLayout.RowSplit;
-import org.micromanager.utils.MMScriptException;
-
-import com.swtdesigner.SwingResourceManager;
-
-import bsh.This;
 import mmcorej.StrVector;
 import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
@@ -43,6 +36,10 @@ import nist.textfield.TextFieldInputPanel;
 import nist.textfield.validator.ValidatorDbl;
 import nist.textfield.validator.ValidatorInt;
 import nist.textfield.validator.ValidatorPrefix;
+
+import org.micromanager.utils.MMScriptException;
+
+import com.swtdesigner.SwingResourceManager;
 
 @SuppressWarnings("serial")
 public class ControlPanel
@@ -56,21 +53,16 @@ implements ActionListener
 	private JToggleButton useManual;
 	private JToggleButton useAutomated;
 	private ButtonGroup manualAutoGroup;
+	private TextFieldInputPanel<Double> minExposureInput;
+	private TextFieldInputPanel<Double> maxExposureInput;
+	private TextFieldInputPanel<Integer> numReplicatesInput;
 	
 	// General Capture Settings
 	private JPanel generalSettingsPanel;
-	private TextFieldInputPanel<Double> minExposureInput;
-	private JCheckBox usePreviousCalibration;
-	private TextFieldInputPanel<Double> maxExposureInput;
-	private TextFieldInputPanel<Integer> numReplicatesInput;
 	private TextFieldInputPanel<String> plateIdInput;
+	private DirectoryChooserPanel outputDirectory;
 	
 	// Save Settings
-	private JPanel saveSettingsPanel;
-	private DirectoryChooserPanel outputDirectory;
-	private JCheckBox saveRawImages;
-	private JCheckBox saveMeanImages;
-	private JCheckBox saveStdImages;
 	
 	// Manual Capture Settings
 	private JPanel manualSettingsPanel;
@@ -86,8 +78,10 @@ implements ActionListener
 	private JLabel transmittedShutterLabel;
 	private JComboBox fluorescentShutter;
 	private JComboBox transmittedShutter;
-	private JCheckBox useAutoFocus;
-	private JProgressBar captureProgressBar;
+	private JLabel fluorescentTurretLabel;
+	private JLabel condenserTurretLabel;
+	private JComboBox fluorescentTurret;
+	private JComboBox condenserTurret;
 	private JTable channelSettings;
 	private DefaultTableModel dtm;
 	private JButton addChannelButton;
@@ -123,37 +117,20 @@ implements ActionListener
 				useAutomated.setFocusPainted(false);
 			manualAutoGroup.add(useManual);
 			manualAutoGroup.add(useAutomated);
+			numReplicatesInput = new TextFieldInputPanel("Replicates: ", Integer.toString(AppParams.getNumReplicates()),5, new ValidatorInt(0,53));
+			numReplicatesInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
+			minExposureInput = new TextFieldInputPanel("Min Exposure (ms): ", Double.toString(AppParams.getMinExposure()),5, new ValidatorDbl(0.001,503));
+			minExposureInput.setToolTipText("<html>Please enter the minimum exposure to use for imaging.");
+			maxExposureInput = new TextFieldInputPanel("Max Exposure (ms): ", Double.toString(AppParams.getMaxExposure()),5, new ValidatorDbl(0,10007));
+			maxExposureInput.setToolTipText("<html>Please enter the maximum exposure to use for imaging.");
 			
 		// General Settings Panel
 		generalSettingsPanel = new JPanel(new GridBagLayout());
 		generalSettingsPanel.setBorder(BorderFactory.createTitledBorder("General Settings"));
 			plateIdInput = new TextFieldInputPanel("Sample Name: ", AppParams.getPlateID(), new ValidatorPrefix());
 			plateIdInput.setToolTipText("<html>Please enter the name of the sample (used for saving files).</html>");
-			usePreviousCalibration = new JCheckBox();
-			usePreviousCalibration.setSelected(AppParams.usePreviousCalibration());
-			if (!AppParams.hasAutoShutter()) usePreviousCalibration.setEnabled(false);
-			usePreviousCalibration.setText("Use Previous Runs Calibrations");
-			numReplicatesInput = new TextFieldInputPanel("Number of replicates at each exposure: ", Integer.toString(AppParams.getNumReplicates()), new ValidatorInt(0,53));
-			numReplicatesInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
-			minExposureInput = new TextFieldInputPanel("Minimum Exposure (ms): ", Double.toString(AppParams.getMinExposure()), new ValidatorDbl(0.001,503));
-			minExposureInput.setToolTipText("<html>Please enter the minimum exposure to use for imaging.");
-			maxExposureInput = new TextFieldInputPanel("Maximum Exposure (ms): ", Double.toString(AppParams.getMaxExposure()), new ValidatorDbl(0,10007));
-			maxExposureInput.setToolTipText("<html>Please enter the maximum exposure to use for imaging.");
-			
-		// Save Settings Panel
-		saveSettingsPanel = new JPanel(new GridBagLayout());
-		saveSettingsPanel.setBorder(BorderFactory.createTitledBorder("Save Settings"));
 			outputDirectory = new DirectoryChooserPanel("Save Directory:", AppParams.getCoreSaveDir(), 30);
 			outputDirectory.setToolTipText("<html>Where all of the data, images, and <br>metadata will be saved.</html>");
-			saveRawImages = new JCheckBox();
-			saveRawImages.setText("Save All Images");
-			saveRawImages.setSelected(AppParams.isSaveRawImages());
-			saveMeanImages = new JCheckBox();
-			saveMeanImages.setText("Save Average (Mean) Images");
-			saveMeanImages.setSelected(AppParams.isSaveMeanImages());
-			saveStdImages = new JCheckBox();
-			saveStdImages.setText("Save Std Images");
-			saveStdImages.setSelected(AppParams.isSaveStdImages());
 
 		// Manual Settings Panel
 		manualSettingsPanel = new JPanel(new GridBagLayout());
@@ -172,15 +149,22 @@ implements ActionListener
 			automatedDescription.setText("Use these settings in addition to the Plate Scan tab to automatically capture images.");
 			fluorescentShutterLabel = new JLabel("Fluorescent Shutter");
 			fluorescentShutter = new JComboBox();
+			fluorescentTurretLabel = new JLabel("Fluorescent Turret");
+			fluorescentTurret = new JComboBox();
 			transmittedShutterLabel = new JLabel("Transmitted Shutter");
 			transmittedShutter = new JComboBox();
+			condenserTurretLabel =  new JLabel("Condesner Turret");
+			condenserTurret = new JComboBox();
 			StrVector shutterDevices = AppParams.getShutterDevices();
 			for (int i=0; i<shutterDevices.size(); i++) {
 				fluorescentShutter.addItem(shutterDevices.get(i));
 				transmittedShutter.addItem(shutterDevices.get(i));
 			}
-			useAutoFocus = new JCheckBox();
-			useAutoFocus.setText("Use Autofocus");
+			StrVector stateDevices = AppParams.getStateDevices();
+			for (int i = 0; i<stateDevices.size();i++) {
+				fluorescentTurret.addItem(stateDevices.get(i));
+				condenserTurret.addItem(stateDevices.get(i));
+			}
 			addChannelButton = new JButton("Add Channel");
 			addChannelButton.setIcon(SwingResourceManager.getIcon(ControlPanel.class, "/plus.png"));
 			removeChannelButton = new JButton("Remove Channel");
@@ -219,12 +203,7 @@ implements ActionListener
 			dtm.setValueAt("Absorbance", 0, 0);
 			dtm.setValueAt("Absorbance", 0, 1);
 			channelSettings.getTableHeader().setPreferredSize(new Dimension(channelSettings.getColumnModel().getTotalColumnWidth(),37));
-			channelSettings.setPreferredScrollableViewportSize(new Dimension(51,51));
-			captureProgressBar = new JProgressBar();
-			captureProgressBar.setForeground(new java.awt.Color(255,0,1));
-
-		//aboutButton = new JButton("About");
-		//aboutButton.setToolTipText("<html>This takes you to the NIST Fluorescence <br>Microscope Benchmarking website.<br><i>Plugin Version 1.0</i></html>");
+			channelSettings.setPreferredScrollableViewportSize(new Dimension(51,101));
 	}
 
 	private void initPanel()
@@ -255,68 +234,33 @@ implements ActionListener
 		c.anchor = GridBagConstraints.LINE_END;
 		startStopPanel.add(useManual,c);
 		useManual.setSelected(true);
-		c.gridx++;
 		c.anchor = GridBagConstraints.LINE_START;
+		c.gridx++;
 		startStopPanel.add(useAutomated,c);
+		c.gridy++;
+		c.gridx = 0;
+		c.anchor = GridBagConstraints.CENTER;
+		c.gridwidth = 2;
+		startStopPanel.add(outputDirectory,c);
+		c.gridy++;
+		c.gridwidth = 1;
+		c.gridx = 0;
+		startStopPanel.add(plateIdInput,c);
+		c.gridx++;
+		startStopPanel.add(numReplicatesInput,c);
+		c.gridy++;
+		c.gridx = 0;
+		c.gridwidth = 1;
+		startStopPanel.add(minExposureInput,c);
+		c.gridx++;
+		startStopPanel.add(maxExposureInput,c);
 		c.anchor = GridBagConstraints.CENTER;
 		c.fill = GridBagConstraints.BOTH;
 		c.gridx = 0;
 		c.gridy = 0;
-		c.ipadx = 225 ;
+		c.ipadx = 0;
 		c.gridwidth = 2;
 		content.add(startStopPanel, c);
-		
-		// Create General Settings panel
-		c.ipadx = 0;
-		c.ipady = 0;
-		c.weightx = 1;
-		c.fill = GridBagConstraints.NONE;
-		c.anchor = GridBagConstraints.CENTER;
-		c.gridwidth = 1;
-		c.gridx = 0;
-		generalSettingsPanel.add(plateIdInput,c);
-		c.gridx++;
-		generalSettingsPanel.add(usePreviousCalibration,c);
-		c.gridx = 0;
-		c.gridwidth = 2;
-		c.gridy++;
-		generalSettingsPanel.add(numReplicatesInput,c);
-		c.gridy++;
-		c.gridwidth = 1;
-		generalSettingsPanel.add(minExposureInput,c);
-		c.gridx++;
-		generalSettingsPanel.add(maxExposureInput,c);
-		c.gridwidth = 2;
-		c.gridy = 1;
-		c.gridx = 0;
-		c.ipadx = 0;
-		c.ipady = 0;
-		content.add(generalSettingsPanel,c);
-		
-		// Save Settings Panel
-		c.gridy = 0;
-		c.gridwidth = 6;
-		saveSettingsPanel.add(outputDirectory,c);
-		c.gridy++;
-		c.gridwidth = 2;
-		//saveSettingsPanel.add(saveRawImages,c);
-		//c.gridx = 2;
-		saveSettingsPanel.add(saveMeanImages,c);
-		//c.gridx = 4;
-		c.gridx = 2;
-		saveSettingsPanel.add(saveStdImages,c);
-		//c.gridwidth = 3;
-		//c.gridy++;
-		//c.gridx= 1;
-		//saveSettingsPanel.add(saveLinearRegression,c);
-		c.gridwidth = 2;
-		//c.gridx = 4;
-		//saveSettingsPanel.add(saveSlopeImage,c);
-		c.gridy = 2;
-		c.gridx = 0;
-		c.gridwidth = 2;
-		c.fill = GridBagConstraints.HORIZONTAL;
-		content.add(saveSettingsPanel,c);
 		
 		// Create Manual Settings Panel
 		c.fill = GridBagConstraints.NONE;
@@ -336,35 +280,44 @@ implements ActionListener
 		// Create Automated Settings Panel
 		c.gridy = 0;
 		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.CENTER;
 		//automatedSettingsPanel.add(automatedDescription,c);
 		//c.gridy++;
 		c.gridwidth = 1;
 		automatedSettingsPanel.add(fluorescentShutterLabel,c);
 		c.gridx++;
+		c.gridwidth = 3;
 		automatedSettingsPanel.add(fluorescentShutter,c);
+		c.gridwidth = 1;
+		c.gridx += 3;
+		automatedSettingsPanel.add(fluorescentTurretLabel,c);
+		c.gridx++;
+		automatedSettingsPanel.add(fluorescentTurret,c);
 		c.gridy++;
 		c.gridx = 0;
 		automatedSettingsPanel.add(transmittedShutterLabel,c);
 		c.gridx++;
+		c.gridwidth = 3;
 		automatedSettingsPanel.add(transmittedShutter,c);
 		c.gridwidth = 1;
-		c.gridx = 0;
+		c.gridx += 3;
+		automatedSettingsPanel.add(condenserTurretLabel,c);
+		c.gridx++;
+		automatedSettingsPanel.add(condenserTurret,c);
+		c.gridx = 3;
 		c.gridy++;
 		automatedSettingsPanel.add(addChannelButton,c);
 		c.gridx++;
 		automatedSettingsPanel.add(removeChannelButton,c);
-		/*automatedSettingsPanel.add(useAutoFocus,c);
-		c.gridy++;
-		c.fill = GridBagConstraints.HORIZONTAL;
-		automatedSettingsPanel.add(captureProgressBar,c);*/
 		c.gridy++;
 		c.gridx = 0;
 		c.gridwidth = 6;
-		c.anchor = GridBagConstraints.CENTER;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		automatedSettingsPanel.add(new JScrollPane(channelSettings),c);
 		c.gridy = 4;
-		c.fill = GridBagConstraints.HORIZONTAL;
+		c.fill = GridBagConstraints.BOTH;
+		c.anchor = GridBagConstraints.CENTER;
+		c.gridwidth = 2;
 		content.add(automatedSettingsPanel,c);
 		
 		if (AppParams.getIsAutomated()) {
@@ -546,25 +499,7 @@ implements ActionListener
 	
 	public String getTransmittedShutter() {return transmittedShutter.getSelectedItem().toString();}
 	
-	public boolean usePreviousCalibration() {return usePreviousCalibration.isSelected();}
-	
-	public void setUsePreviousCalibration(boolean setShutter) {usePreviousCalibration.setSelected(setShutter);}
-	
-	public void updateStatus(double percentComplete) {captureProgressBar.setValue((int)(percentComplete * 100.0D));}
-	
 	public boolean isAutomated() {return useAutomated.isSelected();}
-	
-	public boolean getSaveRawImages() {return saveRawImages.isSelected();}
-	
-	public void setSaveRawImages(boolean saveRaw) {saveRawImages.setSelected(saveRaw);}
-	
-	public boolean getSaveMeanImages() {return saveMeanImages.isSelected();}
-	
-	public void setSaveMeanImages(boolean saveMean) {saveMeanImages.setSelected(saveMean);}
-	
-	public boolean getSaveStdImages() {return saveStdImages.isSelected();}
-	
-	public void setSaveStdImages(boolean saveStd) {saveStdImages.setSelected(saveStd);}
 	
 	public String getCoreSaveDirectory() {return outputDirectory.getValue();}
 	
