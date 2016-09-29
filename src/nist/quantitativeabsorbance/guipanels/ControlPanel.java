@@ -27,13 +27,19 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 
+<<<<<<< HEAD
+import org.micromanager.utils.MMScriptException;
+
+import com.swtdesigner.SwingResourceManager;
+
+=======
+>>>>>>> refs/remotes/origin/master
 import mmcorej.StrVector;
 import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
 import nist.logofield.AddNistLogo;
 import nist.quantitativeabsorbance.AppParams;
 import nist.textfield.TextFieldInputPanel;
-import nist.textfield.validator.ValidatorDbl;
 import nist.textfield.validator.ValidatorInt;
 import nist.textfield.validator.ValidatorPrefix;
 
@@ -59,10 +65,18 @@ implements ActionListener
 	
 	// General Capture Settings
 	private JPanel generalSettingsPanel;
+<<<<<<< HEAD
+	private DirectoryChooserPanel outputDirectory;
+	private TextFieldInputPanel<Integer> numReplicatesInput;
+=======
+>>>>>>> refs/remotes/origin/master
 	private TextFieldInputPanel<String> plateIdInput;
+<<<<<<< HEAD
+=======
 	private DirectoryChooserPanel outputDirectory;
 	
 	// Save Settings
+>>>>>>> refs/remotes/origin/master
 	
 	// Manual Capture Settings
 	private JPanel manualSettingsPanel;
@@ -73,24 +87,34 @@ implements ActionListener
 	
 	// Automated Capture Settings
 	private JPanel automatedSettingsPanel;
-	private JLabel automatedDescription;
+	private JPanel fluorescentPanel;
 	private JLabel fluorescentShutterLabel;
-	private JLabel transmittedShutterLabel;
 	private JComboBox fluorescentShutter;
+	private JLabel fluorescentTurretLabel;
+	private JComboBox fluorescentTurret;
+	private JPanel transmittedPanel;
+	private JLabel transmittedShutterLabel;
 	private JComboBox transmittedShutter;
+<<<<<<< HEAD
+	private JLabel transmittedTurretLabel;
+	private JComboBox transmittedTurret;
+	private JCheckBox useAutoFocus;
+	private JProgressBar captureProgressBar;
+=======
 	private JLabel fluorescentTurretLabel;
 	private JLabel condenserTurretLabel;
 	private JComboBox fluorescentTurret;
 	private JComboBox condenserTurret;
+>>>>>>> refs/remotes/origin/master
 	private JTable channelSettings;
 	private DefaultTableModel dtm;
 	private JButton addChannelButton;
 	private JButton removeChannelButton;
 	ArrayList<DefaultCellEditor> channelTypeEditor = new ArrayList<DefaultCellEditor>();
-	ArrayList<DefaultCellEditor> fluoroDeviceEditor = new ArrayList<DefaultCellEditor>();
 	ArrayList<DefaultCellEditor> fluoroSettingEditor = new ArrayList<DefaultCellEditor>();
-	ArrayList<DefaultCellEditor> transDeviceEditor = new ArrayList<DefaultCellEditor>();
+	ArrayList<JComboBox> fluorescentSetting = new ArrayList<JComboBox>();
 	ArrayList<DefaultCellEditor> transSettingEditor = new ArrayList<DefaultCellEditor>();
+	ArrayList<JComboBox> transmittedSetting = new ArrayList<JComboBox>();
 
 	public ControlPanel() throws Exception
 	{
@@ -127,10 +151,20 @@ implements ActionListener
 		// General Settings Panel
 		generalSettingsPanel = new JPanel(new GridBagLayout());
 		generalSettingsPanel.setBorder(BorderFactory.createTitledBorder("General Settings"));
+<<<<<<< HEAD
+=======
 			plateIdInput = new TextFieldInputPanel("Sample Name: ", AppParams.getPlateID(), new ValidatorPrefix());
 			plateIdInput.setToolTipText("<html>Please enter the name of the sample (used for saving files).</html>");
+>>>>>>> refs/remotes/origin/master
 			outputDirectory = new DirectoryChooserPanel("Save Directory:", AppParams.getCoreSaveDir(), 30);
 			outputDirectory.setToolTipText("<html>Where all of the data, images, and <br>metadata will be saved.</html>");
+<<<<<<< HEAD
+			plateIdInput = new TextFieldInputPanel("Sample Name: ", AppParams.getPlateID(), new ValidatorPrefix());
+			plateIdInput.setToolTipText("<html>Please enter the name of the sample (used for saving files).</html>");
+			numReplicatesInput = new TextFieldInputPanel("Number of replicates at each exposure: ", Integer.toString(AppParams.getNumReplicates()), new ValidatorInt(0,53));
+			numReplicatesInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
+=======
+>>>>>>> refs/remotes/origin/master
 
 		// Manual Settings Panel
 		manualSettingsPanel = new JPanel(new GridBagLayout());
@@ -145,6 +179,21 @@ implements ActionListener
 		// Automated Settings Panel
 		automatedSettingsPanel = new JPanel(new GridBagLayout());
 		automatedSettingsPanel.setBorder(BorderFactory.createTitledBorder("Automated Capture Settings"));
+<<<<<<< HEAD
+			fluorescentPanel = new JPanel(new GridBagLayout());
+			fluorescentPanel.setBorder(BorderFactory.createTitledBorder("Fluorescent Settings"));
+				fluorescentShutterLabel = new JLabel("Shutter");
+				fluorescentShutter = new JComboBox();
+				fluorescentTurretLabel = new JLabel("Turret");
+				fluorescentTurret = new JComboBox();
+			transmittedPanel = new JPanel(new GridBagLayout());
+			transmittedPanel.setBorder(BorderFactory.createTitledBorder("Transmitted Settings"));
+				transmittedShutterLabel = new JLabel("Shutter");
+				transmittedShutter = new JComboBox();
+				transmittedTurretLabel = new JLabel("Turret");
+				transmittedTurret = new JComboBox();
+
+=======
 			automatedDescription = new JLabel();
 			automatedDescription.setText("Use these settings in addition to the Plate Scan tab to automatically capture images.");
 			fluorescentShutterLabel = new JLabel("Fluorescent Shutter");
@@ -155,26 +204,40 @@ implements ActionListener
 			transmittedShutter = new JComboBox();
 			condenserTurretLabel =  new JLabel("Condesner Turret");
 			condenserTurret = new JComboBox();
+>>>>>>> refs/remotes/origin/master
 			StrVector shutterDevices = AppParams.getShutterDevices();
 			for (int i=0; i<shutterDevices.size(); i++) {
 				fluorescentShutter.addItem(shutterDevices.get(i));
 				transmittedShutter.addItem(shutterDevices.get(i));
 			}
+<<<<<<< HEAD
+			fluorescentShutter.setSelectedIndex(0);
+			transmittedShutter.setSelectedIndex(0);
+			StrVector stateDevices = AppParams.getStateDevices();
+			for (int i=0; i<stateDevices.size(); i++) {
+				fluorescentTurret.addItem(stateDevices.get(i));
+				transmittedTurret.addItem(stateDevices.get(i));
+			}
+			fluorescentTurret.setSelectedIndex(0);
+			transmittedTurret.setSelectedIndex(0);
+			
+			useAutoFocus = new JCheckBox();
+			useAutoFocus.setText("Use Autofocus");
+=======
 			StrVector stateDevices = AppParams.getStateDevices();
 			for (int i = 0; i<stateDevices.size();i++) {
 				fluorescentTurret.addItem(stateDevices.get(i));
 				condenserTurret.addItem(stateDevices.get(i));
 			}
+>>>>>>> refs/remotes/origin/master
 			addChannelButton = new JButton("Add Channel");
 			addChannelButton.setIcon(SwingResourceManager.getIcon(ControlPanel.class, "/plus.png"));
 			removeChannelButton = new JButton("Remove Channel");
 			removeChannelButton.setIcon(SwingResourceManager.getIcon(ControlPanel.class, "/minus.png"));
 			String[] columnNames = { "<html><center>Channel<br>Name</center></html>",
 					"<html><center>Type</center></html>",
-					"<html><center>Turret 1</center></html>",
-					"<html><center>Turret 1<br>Setting</center></html>",
-					"<html><center>Turret 2</center></html>",
-					"<html><center>Turret 2<br>Setting</center></html>",
+					"<html><center>Transmitted<br>Setting</center></html>",
+					"<html><center>Fluorescent<br>Setting</center></html>",
 					"<html><center>Exposure</center></html>",
 					"<html><center>Z-Offset</center></html>"};
 			dtm = new DefaultTableModel();
@@ -186,13 +249,9 @@ implements ActionListener
 					if (modelColumn==1) {
 						return channelTypeEditor.get(row);
 					} else if (modelColumn==2) {
-						return fluoroDeviceEditor.get(row);
+						return transSettingEditor.get(row);
 					} else if (modelColumn==3) {
 						return fluoroSettingEditor.get(row);
-					} else if (modelColumn==4) {
-						return transDeviceEditor.get(row);
-					} else if (modelColumn==5) {
-						return transSettingEditor.get(row);
 					} else {
 						return super.getCellEditor(row, column);
 					}
@@ -261,10 +320,32 @@ implements ActionListener
 		c.ipadx = 0;
 		c.gridwidth = 2;
 		content.add(startStopPanel, c);
+<<<<<<< HEAD
+		
+		// Create General Settings panel
+		c.ipadx = 0;
+		c.ipady = 0;
+		c.weightx = 1;
+		c.fill = GridBagConstraints.BOTH;
+		c.anchor = GridBagConstraints.CENTER;
+		c.gridwidth = 2;
+		c.gridx = 0;
+		generalSettingsPanel.add(outputDirectory,c);
+		c.gridwidth = 1;
+		c.gridy++;
+		generalSettingsPanel.add(plateIdInput,c);
+		c.gridx++;
+		c.gridx = 0;
+		c.gridx = 1;
+		generalSettingsPanel.add(numReplicatesInput,c);
+		content.add(generalSettingsPanel,c);
+=======
+>>>>>>> refs/remotes/origin/master
 		
 		// Create Manual Settings Panel
 		c.fill = GridBagConstraints.NONE;
 		c.gridy = 0;
+		c.gridx = 0;
 		manualSettingsPanel.add(manualDescription,c);
 		c.gridy++;
 		c.gridwidth = 1;
@@ -278,14 +359,22 @@ implements ActionListener
 		content.add(manualSettingsPanel,c);
 
 		// Create Automated Settings Panel
+<<<<<<< HEAD
+		c.fill = GridBagConstraints.BOTH;
+=======
 		c.gridy = 0;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.CENTER;
 		//automatedSettingsPanel.add(automatedDescription,c);
 		//c.gridy++;
+>>>>>>> refs/remotes/origin/master
 		c.gridwidth = 1;
-		automatedSettingsPanel.add(fluorescentShutterLabel,c);
+		c.gridy = 0;
+		transmittedPanel.add(transmittedShutterLabel,c);
 		c.gridx++;
+<<<<<<< HEAD
+		transmittedPanel.add(transmittedShutter,c);
+=======
 		c.gridwidth = 3;
 		automatedSettingsPanel.add(fluorescentShutter,c);
 		c.gridwidth = 1;
@@ -293,12 +382,33 @@ implements ActionListener
 		automatedSettingsPanel.add(fluorescentTurretLabel,c);
 		c.gridx++;
 		automatedSettingsPanel.add(fluorescentTurret,c);
+>>>>>>> refs/remotes/origin/master
 		c.gridy++;
-		c.gridx = 0;
-		automatedSettingsPanel.add(transmittedShutterLabel,c);
+		transmittedPanel.add(transmittedTurret,c);
+		c.gridx--;
+		transmittedPanel.add(transmittedTurretLabel,c);
+		c.gridx=0;
+		c.gridy=0;
+		automatedSettingsPanel.add(transmittedPanel,c);
+		
+		c.fill = GridBagConstraints.BOTH;
+		c.gridwidth = 1;
+		fluorescentPanel.add(fluorescentShutterLabel,c);
 		c.gridx++;
+<<<<<<< HEAD
+		fluorescentPanel.add(fluorescentShutter,c);
+		c.gridy++;
+		fluorescentPanel.add(fluorescentTurret,c);
+		c.gridx--;
+		fluorescentPanel.add(fluorescentTurretLabel,c);
+		c.gridx = 1;
+		c.gridy = 0;
+		automatedSettingsPanel.add(fluorescentPanel,c);
+		
+=======
 		c.gridwidth = 3;
 		automatedSettingsPanel.add(transmittedShutter,c);
+>>>>>>> refs/remotes/origin/master
 		c.gridwidth = 1;
 		c.gridx += 3;
 		automatedSettingsPanel.add(condenserTurretLabel,c);
@@ -342,6 +452,56 @@ implements ActionListener
 	private void initListeners() {
 		startButton.addActionListener(this);
 		stopButton.addActionListener(this);
+		
+		transmittedTurret.addItemListener(new ItemListener() {
+
+			@Override
+			public void itemStateChanged(ItemEvent event) {
+				if (event.getStateChange()==ItemEvent.SELECTED) {
+					try {
+						StrVector deviceStates = AppParams.getDeviceStates(transmittedTurret.getSelectedItem().toString());
+						int row = 0;
+						int col = 2;
+						for (JComboBox box: transmittedSetting) {
+							box.removeAllItems();
+							for (String state: deviceStates) {
+								box.addItem(state);
+							}
+							box.setSelectedIndex(0);
+							dtm.setValueAt(box.getSelectedItem().toString(), row++, col);
+						}
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		});
+		
+		fluorescentTurret.addItemListener(new ItemListener() {
+
+			@Override
+			public void itemStateChanged(ItemEvent event) {
+				if (event.getStateChange()==ItemEvent.SELECTED) {
+					try {
+						StrVector deviceStates = AppParams.getDeviceStates(fluorescentTurret.getSelectedItem().toString());
+						int row = 0;
+						int col = 3;
+						for (JComboBox box: fluorescentSetting) {
+							box.removeAllItems();
+							for (String state: deviceStates) {
+								box.addItem(state);
+							}
+							box.setSelectedIndex(0);
+							dtm.setValueAt(box.getSelectedItem().toString(), row++, col);
+						}
+					} catch (Exception e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		});
 		
 		useManual.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -411,71 +571,33 @@ implements ActionListener
 		}
 	}
 	
-	private class StateDeviceBox extends JComboBox {
-		JComboBox deviceStateBox;
-		
-		public StateDeviceBox() throws Exception {
-			super();
-			StrVector stateDevices = AppParams.getStateDevices();
-			for (int i = 0; i<stateDevices.size();i++) {
-				this.addItem(stateDevices.get(i));
-			}
-			this.setSelectedIndex(0);
-
-			deviceStateBox = new JComboBox();
-			StrVector deviceStates = AppParams.getDeviceStates(stateDevices.get(0));
-			for (int i = 0; i<deviceStates.size();i++) {
-				deviceStateBox.addItem(deviceStates.get(i));
-			}
-			deviceStateBox.setSelectedIndex(0);
-			
-			addItemListener(new ItemListener() {
-				public void itemStateChanged(ItemEvent e) {
-					// TODO Auto-generated method stub
-					if (e.getStateChange()==ItemEvent.SELECTED) {
-						StateDeviceBox parentBox = (StateDeviceBox) e.getSource();
-						JComboBox childBox = parentBox.getDeviceStateBox();
-						StrVector deviceStates = new StrVector();
-						try {
-							deviceStates = AppParams.getDeviceStates(parentBox.getSelectedItem().toString());
-						} catch (Exception e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
-						childBox.removeAllItems();
-						for (int i = 0; i<deviceStates.size(); i++) {
-							childBox.addItem(deviceStates.get(i).toString());
-						}
-						childBox.setSelectedIndex(0);
-						int row = channelSettings.getSelectedRow();
-						int column = channelSettings.getSelectedColumn();
-						channelSettings.setValueAt(deviceStates.get(0).toString(), row, column+1);
-					}
-				}
-			});
-		}
-		
-		public JComboBox getDeviceStateBox() {
-			return deviceStateBox;
-		}
-
-	}
-	
 	private void addChannel() throws Exception {
-		dtm.addRow(new Object[] {"","","","","","","",""});
+		dtm.addRow(new Object[] {"","","","","",""});
 		JComboBox channelGroup = new JComboBox();
 		channelGroup.addItem("Absorbance");
 		channelGroup.addItem("Phase/DIC");
 		channelGroup.addItem("Fluorescence");
 		channelTypeEditor.add(new DefaultCellEditor(channelGroup));
-		StateDeviceBox fluorescentGroup = new StateDeviceBox();
-		fluoroDeviceEditor.add(new DefaultCellEditor(fluorescentGroup));
-		StateDeviceBox transmittedGroup = new StateDeviceBox();
-		transDeviceEditor.add(new DefaultCellEditor(transmittedGroup));
-		JComboBox fluorescentSetting = fluorescentGroup.getDeviceStateBox();
-		fluoroSettingEditor.add(new DefaultCellEditor(fluorescentSetting));
-		JComboBox transmittedSetting = transmittedGroup.getDeviceStateBox();
-		transSettingEditor.add(new DefaultCellEditor(transmittedSetting));
+		
+		StrVector transmittedStates = AppParams.getDeviceStates(transmittedTurret.getSelectedItem().toString());
+		JComboBox transBox = new JComboBox();
+		for (String state: transmittedStates) {
+			transBox.addItem(state);
+		}
+		transBox.setSelectedIndex(0);
+		transmittedSetting.add(transBox);
+		transSettingEditor.add(new DefaultCellEditor(transBox));
+		dtm.setValueAt(transBox.getSelectedItem().toString(), transmittedSetting.size()-1, 2);
+		
+		StrVector fluorescentStates = AppParams.getDeviceStates(fluorescentTurret.getSelectedItem().toString());
+		JComboBox fluoroBox = new JComboBox();
+		for (String state: fluorescentStates) {
+			fluoroBox.addItem(state);
+		}
+		fluoroBox.setSelectedIndex(0);
+		fluorescentSetting.add(fluoroBox);
+		fluoroSettingEditor.add(new DefaultCellEditor(fluoroBox));
+		dtm.setValueAt(fluoroBox.getSelectedItem().toString(), fluorescentSetting.size()-1, 3);
 	}
 	
 	private void removeChannel() {
@@ -495,10 +617,19 @@ implements ActionListener
 		return tableData;
 	}
 	
+	public String getFluorescentDevice() {return fluorescentTurret.getSelectedItem().toString();}
+	
+	public String getTransmittedDevice() {return transmittedTurret.getSelectedItem().toString();}
+	
 	public String getFluorescentShutter() {return fluorescentShutter.getSelectedItem().toString();}
 	
 	public String getTransmittedShutter() {return transmittedShutter.getSelectedItem().toString();}
 	
+<<<<<<< HEAD
+	public void updateStatus(double percentComplete) {captureProgressBar.setValue((int)(percentComplete * 100.0D));}
+	
+=======
+>>>>>>> refs/remotes/origin/master
 	public boolean isAutomated() {return useAutomated.isSelected();}
 	
 	public String getCoreSaveDirectory() {return outputDirectory.getValue();}
@@ -524,13 +655,5 @@ implements ActionListener
 	public void setNumChannels(int numChannels){this.channelInput.setValue(numChannels);}
 
 	public Integer getNumChannels(){return (Integer) channelInput.getValue();}
-	
-	public void setMinExposure(double minExposure){this.minExposureInput.setValue(minExposure);}
-
-	public Double getMinExposure(){return (Double) minExposureInput.getValue();}
-
-	public void setMaxExposure(double minExposure){this.maxExposureInput.setValue(minExposure);}
-
-	public Double getMaxExposure(){return (Double) maxExposureInput.getValue();}
 
 }

@@ -88,7 +88,6 @@ public class BenchmarkingThread implements Runnable {
 			double elapsedTime = 0;
 			
 			if (AppParams.saveBenchmarkExcel()) {
-				tableSetup();
 				addResult(elapsedTime,currentSample.getAverageSlope(),benchmarkAbsorption);
 			}
 			
@@ -134,7 +133,7 @@ public class BenchmarkingThread implements Runnable {
 				sum /= previousAbsorption.size();
 				
 				IJ.log("Ideal exposure: " + Double.toString(currentSample.bestExposure()));
-				IJ.log("Samples at ideal exposure: " + Integer.toString(currentSample.samplesForBlank(currentSample.bestExposure())));
+				IJ.log("Samples at ideal exposure: " + Integer.toString(currentSample.numBlankSamples(currentSample.bestExposure())));
 				for (int j=3; j<=15; j++) {
 					IJ.log("Minimum confident intensity " + Integer.toString(j) + ": " + Integer.toString(currentSample.minConfPix(j)));
 				}
@@ -172,7 +171,7 @@ public class BenchmarkingThread implements Runnable {
 					writeResults(elapsedTime,slope,absorption);
 				} else if (AppParams.saveBenchmarkExcel()) {
 					addResult(elapsedTime,currentSlope,benchmarkAbsorption);
-					benchmarkingResults.save(AppParams.getOutDir() + "BenchmarkingResults.csv");
+					benchmarkingResults.saveAs(AppParams.getOutDir() + "BenchmarkingResults.csv");
 				}
 			}
 			
@@ -196,15 +195,6 @@ public class BenchmarkingThread implements Runnable {
 			pw.close();
 		}
 		catch (IOException e) {}
-	}
-	
-	private void tableSetup() {
-		benchmarkingResults.getFreeColumn("Sample");
-		benchmarkingResults.setDecimalPlaces(0, 0);
-		benchmarkingResults.getFreeColumn("Average Slope");
-		benchmarkingResults.setDecimalPlaces(1, 6);
-		benchmarkingResults.getFreeColumn("Benchmarking Absorption");
-		benchmarkingResults.setDecimalPlaces(2, 6);
 	}
 	
 	private void addResult(double sample, double slope, double absorption) {

@@ -41,19 +41,12 @@ public class AppParams {
 	private static String coreSaveDir; //root save folder
 	private static String outDir; //save folder for individual capture runs
 	private static StrVector rawImageDir;
-	private static StrVector meanImageDir;
-	private static StrVector stdImageDir;
 	private static StrVector calibrationImageDir;
 	private static StrVector channelImageDir;
-	private static boolean saveRawImages = false;
-	private static boolean saveMeanImages = false;
-	private static boolean saveStdImages = false;
 	private static boolean saveBenchmarkingExcel = false; //benchmarking
 	private static boolean saveBenchmarkingTxt = false; //benchmarking
 	
 	// Quantitative absorption thread settings. Many of these will also control the benchmark thread.
-	private static double minExposure = 1;
-	private static double maxExposure = 1000;
 	private static int channels = 1;
 	private static int numReplicates = 3;
 	private static int numSamples = 5;
@@ -113,8 +106,6 @@ public class AppParams {
 	public static void setTransmittedDeviceSetting(StrVector transmittedDeviceSetting) {AppParams.transmittedDeviceSetting = transmittedDeviceSetting;}
 	
 	// Methods to set quantitative absorption thread settings. These are also used for benchmarking.
-	public static void setMinExposure(float minExposure) {AppParams.minExposure = minExposure;}
-	public static void setMaxExposure(float maxExposure) {AppParams.maxExposure = maxExposure;}
 	public static void setChannels(int channels) {AppParams.channels = channels;}
 	public static void setNumReplicates(int numReplicates) {AppParams.numReplicates = numReplicates;}
 	public static void setNumSamples(int numSamples) {AppParams.numSamples = numSamples;}
@@ -126,8 +117,6 @@ public class AppParams {
 	
 	// Methods to get quantitative absorption thread settings. These are also used for benchmarking.
 	public static String getAPP_TITLE() {return "Quantitative Absorption GUI";}
-	public static double getMinExposure() {return minExposure;}
-	public static double getMaxExposure() {return maxExposure;}
 	public static int getChannels() {return channels;}
 	public static int getNumReplicates() {return numReplicates;}
 	public static int getNumSamples() {return numSamples;}
@@ -155,14 +144,9 @@ public class AppParams {
 	// Methods to get save settings
 	public static boolean saveBenchmarkExcel() {return saveBenchmarkingExcel;}
 	public static boolean saveBenchmarkTxt() {return saveBenchmarkingTxt;}
-	public static boolean isSaveRawImages() {return saveRawImages;}
-	public static boolean isSaveMeanImages() {return saveMeanImages;}
-	public static boolean isSaveStdImages() {return saveStdImages;}
 	public static String getCoreSaveDir() {return coreSaveDir;}
 	public static String getOutDir() {return outDir;}
 	public static String getRawImageDir(int index) {return rawImageDir.get(index);}
-	public static String getMeanImageDir(int index) {return meanImageDir.get(index);}
-	public static String getStdImageDir(int index) {return stdImageDir.get(index);}
 	public static String getCalibrationImageDir(int index) {return calibrationImageDir.get(index);}
 	public static String getChannelImageDir(int index) {return channelImageDir.get(index);}
 	
@@ -229,15 +213,9 @@ public class AppParams {
 		saveBenchmarkingExcel = QuantitativeAbsorptionGUI.getSaveSettingsPanel().isSaveBenchmarkingExcel();
 		saveBenchmarkingTxt = QuantitativeAbsorptionGUI.getSaveSettingsPanel().isSaveBenchmarkingTxt();
 		isAutomated = QuantitativeAbsorptionGUI.getControlPanel().isAutomated();
-		minExposure = QuantitativeAbsorptionGUI.getControlPanel().getMinExposure();
-		maxExposure = QuantitativeAbsorptionGUI.getControlPanel().getMaxExposure();
 		numReplicates = QuantitativeAbsorptionGUI.getControlPanel().getNumReplicates();
 		numSamples = QuantitativeAbsorptionGUI.getControlPanel().getNumSample();
 		channels = QuantitativeAbsorptionGUI.getControlPanel().getNumChannels();
-		saveRawImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveRawImages();
-		saveMeanImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveMeanImages();
-		saveStdImages = QuantitativeAbsorptionGUI.getControlPanel().getSaveStdImages();
-		usePreviousCalibration = QuantitativeAbsorptionGUI.getControlPanel().usePreviousCalibration();
 		fluorescentShutter = QuantitativeAbsorptionGUI.getControlPanel().getFluorescentShutter();
 		transmittedShutter = QuantitativeAbsorptionGUI.getControlPanel().getTransmittedShutter();
 		
@@ -256,19 +234,19 @@ public class AppParams {
 			for (int i=0; i<channels; i++) {
 				channelName.add((String) automatedSettings[i][0]);
 				absorptionSetting.add((String) automatedSettings[i][1]);
-				fluorescentDevice.add((String) automatedSettings[i][2]);
+				transmittedDevice.add(QuantitativeAbsorptionGUI.getControlPanel().getTransmittedDevice());
+				transmittedDeviceSetting.add((String) automatedSettings[i][2]);
+				fluorescentDevice.add(QuantitativeAbsorptionGUI.getControlPanel().getFluorescentDevice());
 				fluorescentDeviceSetting.add((String) automatedSettings[i][3]);
-				transmittedDevice.add((String) automatedSettings[i][4]);
-				transmittedDeviceSetting.add((String) automatedSettings[i][5]);
-				if (automatedSettings[i][6].equals("")) {
+				if (automatedSettings[i][4].equals("")) {
 					channelExposure.add(1);
 				} else {
-					channelExposure.add(Double.parseDouble(automatedSettings[i][6].toString()));
+					channelExposure.add(Double.parseDouble(automatedSettings[i][4].toString()));
 				}
-				if (automatedSettings[i][7].equals("")) {
+				if (automatedSettings[i][5].equals("")) {
 					channelOffset.add(0);
 				} else {
-					channelOffset.add(Double.parseDouble(automatedSettings[i][7].toString()));
+					channelOffset.add(Double.parseDouble(automatedSettings[i][5].toString()));
 				}
 			}
 		}
@@ -301,31 +279,20 @@ public class AppParams {
 				if (callSource instanceof ControlPanel) {
 					channelImageDir = new StrVector();
 					rawImageDir = new StrVector();
-					meanImageDir = new StrVector();
-					stdImageDir = new StrVector();
 					calibrationImageDir = new StrVector();
 					for (int i = 0; i<channels; i++) {
 						channelImageDir.add(outDir + File.separator + channelName.get(i) + File.separator);
 						rawImageDir.add(channelImageDir.get(i) + "Raw Images" + File.separator);
-						meanImageDir.add(channelImageDir.get(i) + "Mean Images" + File.separator);
-						stdImageDir.add(channelImageDir.get(i) + "Std Images" + File.separator);
 						calibrationImageDir.add(channelImageDir.get(i) + "Calibration Images" + File.separator);
 						new File(channelImageDir.get(i)).mkdir();
 						if (absorptionSetting.get(i).equals("Absorbance")) {
 							new File(calibrationImageDir.get(i)).mkdir();
 							new File(rawImageDir.get(i)).mkdir();
-							if (saveMeanImages) {
-								new File(meanImageDir.get(i)).mkdir();
-							}
-							if (saveStdImages) {
-								new File(stdImageDir.get(i)).mkdir();
-							}
 						}
 					}
 				}
 			}
 		}
-		
 	}
 	
 	public static void initializeMicroscopeHardware() {
@@ -380,16 +347,11 @@ public class AppParams {
 			return;
 		}
 
-		pref.putDouble("minExposure", minExposure);
-		pref.putDouble("maxExposure", maxExposure);
 		pref.putInt("numSamples", numSamples);
 		pref.putInt("channels", channels);
 		pref.putInt("numReplicates", numReplicates);
 		pref.put("coreSaveDir", coreSaveDir);
 		pref.putBoolean("isAutomated", isAutomated);
-		pref.putBoolean("saveRawImages", saveRawImages);
-		pref.putBoolean("saveMeanImages", saveMeanImages);
-		pref.putBoolean("saveStdImages", saveStdImages);
 		pref.putBoolean("usePreviousCalibration", usePreviousCalibration);
 
 		try
@@ -415,15 +377,10 @@ public class AppParams {
 		if (!coreSaveDir.endsWith(File.separator)) {
 			coreSaveDir += File.separator;
 		}
-		minExposure = pref.getDouble("minExposure", minExposure);
-		maxExposure = pref.getDouble("maxExposure", maxExposure);
 		numSamples = pref.getInt("numSamples", numSamples);
 		channels = pref.getInt("channels", channels);
 		numReplicates = pref.getInt("numReplicates", numReplicates);
 		isAutomated = pref.getBoolean("isAutomated", isAutomated);
-		saveRawImages = pref.getBoolean("saveRawImages", saveRawImages);
-		saveMeanImages = pref.getBoolean("saveMeanImages", saveMeanImages);
-		saveStdImages = pref.getBoolean("saveStdImages", saveStdImages);
 		usePreviousCalibration = pref.getBoolean("useAutoShutter", usePreviousCalibration);
 	}
 	

@@ -30,6 +30,7 @@ public class ImageStats {
 	private ImagePlus meanImage;
 	private ImagePlus stdImage;
 	public ImagePlus rawImage;
+	public ImageStats background;
 
 	// Variables for statistics
 	public float averageIntercept;
@@ -56,7 +57,7 @@ public class ImageStats {
 	public int nChannels;
 	
 	// Properties related to images captured for absorption
-	double[] poisson;
+	double[] standardDev;
 	int minimumPixInt;
 	double bestExp;
 	double bestExpIntensity;
@@ -102,22 +103,30 @@ public class ImageStats {
 		nChannels = rawImage.getNChannels();
 	}
 	
-	public int samplesForBlank(double exposure) {
+	public int numBlankSamples(double exposure) {
+		/* 
+		 *  This function calculates the number of images required to make sure that the average pixel
+		 *  instensity value will be within 2 pixels of the actual pixel intensity. This calculation is
+		 *  based on the equation for estimating the number of samples requied for a 95% confidence
+		 *  interval.
+		 *  
+		 *  n = (Z*sigma/E)^2 
+		 *  Z - Z-statistic for a condifence interval (~2 for 95% confidence)
+		 *  E - Error bounds of the confidence interval
+		 *  sigma - Standard deviation of pixel intensity
+		 *  
+		 *  For the sake of simplicity, Z = 2 and E = 2 pixels, so that n = sigma^2.
+		 */
 		if (nFrames==1) {
 			return 0;
 		}
 		
 		getFrameDeviation();
-		double maxDev = 0;
 		int pos = 0;
-		for (int i = 0; i<deviationSet.length; i++) {
-			if (maxDev>deviationSet[i]) {
-				pos = i;
-				break;
-			} else {
-				maxDev = deviationSet[i];
-			}
+		while ((deviationSet[pos] - this.stdEst(intensitySet[pos]))/deviationSet[pos] < 0.025 || pos>deviationSet.length) {
+			pos++;
 		}
+		pos--;
 		
 		CurveFitter cf = new CurveFitter(Arrays.copyOfRange(exposureSet, 0, pos), Arrays.copyOfRange(intensitySet, 0, pos));
 		cf.doFit(0);
@@ -125,100 +134,93 @@ public class ImageStats {
 		
 		double intensity = curveFitParams[0] + curveFitParams[1]*exposure;
 		
-		double[] poisson = this.pseudoPoisson();
-		
-		double deviation = poisson[0] + poisson[1]*intensity + poisson[2]*intensity*intensity;
+		double deviation = standardDev[0] + standardDev[1]*intensity;
 		
 		return (int) (deviation*deviation);
 	}
 	
 	public double bestExposure() {
+		/* 
+		 *  This method estimates the best possible exposure value. The best possible exposure value
+		 *  is the time in milliseconds where the average pixel intensity value of all pixels in an
+		 *  image are at least 2 standard deviations below the saturation point of the camera.
+		 */
 		if (bestExp!=0.0) {
 			return bestExp;
 		}
 		
 		getFrameDeviation();
-		double maxDev = 0;
 		int pos = 0;
-		for (int i = 0; i<deviationSet.length; i++) {
-			if (maxDev>deviationSet[i]) {
-				pos = i;
-				break;
-			} else {
-				maxDev = deviationSet[i];
-			}
+		while ((deviationSet[pos] - this.stdEst(intensitySet[pos]))/deviationSet[pos] < 0.05 || pos>deviationSet.length) {
+			pos++;
 		}
-		if (exposureSet==null) {
-			getFrameMean();
-		}
-		System.out.println(exposureSet[0]);
-		System.out.println(pos);
-		CurveFitter cf = new CurveFitter(Arrays.copyOfRange(exposureSet, 0, pos), Arrays.copyOfRange(maxPixelIntensity, 0, pos));
+		pos--;
+
+		CurveFitter cf = new CurveFitter(Arrays.copyOfRange(exposureSet, 0, pos), Arrays.copyOfRange(intensitySet, 0, pos));
 		cf.doFit(0);
 		double[] curveFitParams = cf.getParams();
 		
-		bestExp = ((maxPixelIntensity[pos] - curveFitParams[0])/curveFitParams[1]);
+		bestExp = ((core_.getImageBitDepth() - curveFitParams[0])/curveFitParams[1]) - 2*this.stdEst(core_.getImageBitDepth());
 		bestExpIntensity = curveFitParams[0] + curveFitParams[1]*bestExp;
 		
-		return ((maxPixelIntensity[pos] - curveFitParams[0])/curveFitParams[1]);
+		return bestExp;
 	}
 	
-	public double bestExposureIntensity() {
-		if (bestExpIntensity!=0.0) {
-			return bestExpIntensity;
-		} else {
+	public int bestExposureIntensity() {
+		/*
+		 *  This function returns the expected intensity value at the ideal exposure.
+		 */
+		if (bestExpIntensity==0.0) {
 			bestExposure();
-			return bestExpIntensity;
 		}
+		return (int) bestExpIntensity;
+	}
+	
+	private double absSigma(int intensity) {
+		/*  
+		 *  This function gives an approximate standard deviation for an absorbance value based
+		 *  on the input intensity value provided.
+		 */
+		double ln = Math.log(10);
+		double sigmaI = Math.pow(this.stdEst(intensity)/(intensity*ln), 2);
+		double sigmaIo = Math.pow(this.stdEst(this.bestExposureIntensity()/(this.bestExposureIntensity()*ln)), 2);
+		
+		double sigmaA = Math.sqrt(sigmaI + sigmaIo);
+		
+		return sigmaA;
 	}
 	
 	public int minConfPix(int numExp) {
+		/*  
+		 *  This function returns an integer value that corresponds to a minimum pixel intensity
+		 *  over which the 95% confidence interval for an absorbance value will be at least 0.01
+		 *  absorbance units. This is an estimate based on what the intensity at the best
+		 *  exposure value should be.
+		 *  
+		 *  The standard deviation of absorbance values are calculated using propagation of error
+		 *  estimated by taylor expansion.
+		 */
 		double sqrtN = Math.sqrt(numExp);
-		double error = 0.01;
 		double z = 1.96;
-		double thresh = Math.pow(10, -error*sqrtN/z);
-		double[] poisson = pseudoPoisson();
-		double intensity = bestExposureIntensity();
-		double check = 1 - (poisson[0]/intensity + poisson[1] + poisson[2]*intensity);
-		while (check > thresh || intensity<=0) {
-			intensity -= 1;
-			check = 1 - (poisson[0]/intensity + poisson[1] + poisson[2]*intensity);
+		int intensity = bestExposureIntensity();
+		double test = z*this.absSigma(intensity)/sqrtN;
+		while (test < 0.01 || intensity<=0) {
+			test = z*this.absSigma(--intensity)/sqrtN;
 		}
 		
 		return (int) intensity;
 	}
 
 	// Performs linear regression on all pixels in an image - Last edit -> NJS 2015-08-28
-	public ImagePlus pixelLinReg(ImageStats foreground, ImageStats background) {
-		/*****************************************************************************************
-		 * This method performs a linear regression on the intensity of each pixel in an image   *
-		 *	as a function of exposure time.														*
-		 *																						*
-		 * It is assumed that pixel intensities in an image near the pixel intensity values of	*
-		 * 	the background are non-linear, and the same assumption about non-linearity is made	*
-		 * 	about pixel intensity values in an image near the saturation point. To make sure	*
-		 * 	that linear regression is performed on the linear section of the intensity/exposure	*
-		 * 	function, intensity values that are within 3 standard deviations of the maximum or	*
-		 * 	minimum values of pixel intensity are excluded from the regression					*
-		 * 																						*
-		 * Last Edit - Nick Schaub 2015-08-28													*
-		 *****************************************************************************************/
-		if (nFrames<=1) {
+	public ImagePlus pixelLinReg() {
+		/* 
+		 *  This functions performs a linear regression on the mean pixel intensity across
+		 *  different exposures to give pixel intensity as a function of exposure time.
+		 */
+		if (nFrames<3) {
 			nFrames = rawImage.getNFrames();
 			if (nFrames<=1){
-				IJ.error("nFrames<=1, so I can't perform a linear regression.");
-				return new ImagePlus();
-			}
-		}
-		
-		if (background.meanImage==null) {
-			background.getFrameMean();
-		}
-		
-		if (background.meanImage.getNFrames()<nFrames) {
-			background.getFrameDeviation();
-			if (background.meanImage.getNSlices()<nFrames) {
-				IJ.error("Background frames smaller than image frames. \n Need more background frames for linear regression.");
+				IJ.error("nFrames<3, so an accurate linear regression cannot be determined.");
 				return new ImagePlus();
 			}
 		}
@@ -228,15 +230,9 @@ public class ImageStats {
 		}
 		
 		ImageStack slopeStats = new ImageStack(width,height,3);
-		int zlen = meanImage.getStackSize();
-		int forelen = foreground.meanImage.getNSlices();
-		float[] dIntensity = new float[zlen];
 		double[] intensityFit;
-		double[] exposureRange = this.getExposureRange();
 		double[] exposureFit;
 		int flen = width*height;
-		float[] cPixels = new float[flen]; //Holds pixel values of the image to perform regression on
-		float[] bPixels = new float[flen]; //Holds pixel values of the background image
 		float[] sPixels = new float[flen]; //Holds slope values
 		float[] iPixels = new float[flen]; //Holds y-intercept values
 		float[] rPixels = new float[flen]; //Holds r^2 values
@@ -245,73 +241,20 @@ public class ImageStats {
 		float aR = 0F; //Holds the mean R^2 value
 		CurveFitter cf;
 		double[] curveFitParams = new double[2];
-		int j = 0;
-		int k = 0;
-		double[] poisson = new double[4];
-		poisson = pseudoPoisson();
-		System.out.println("Intercept: " + Double.toString(poisson[0]));
-		System.out.println("B1: " + Double.toString(poisson[1]));
-		System.out.println("B2: " + Double.toString(poisson[2]));
-		System.out.println("R^2: " + Double.toString(poisson[3]));
 		
-		int maxIntensity = forelen-1;
-		for (int i = forelen-1; i>0; i--) {
-			if (foreground.deviationSet[i]<foreground.deviationSet[i-1]) {
-				maxIntensity = i;
-				break;
-			}
+		int maxIntensity = 0;
+		while ((deviationSet[maxIntensity] - this.stdEst(intensitySet[maxIntensity]))/deviationSet[maxIntensity] < 0.05 || maxIntensity>deviationSet.length) {
+			maxIntensity++;
 		}
+		maxIntensity--;
 		
-		System.out.println("Exposure positions: " + Integer.toString(forelen));
+		System.out.println("Exposure positions: " + Integer.toString(intensitySet.length));
 		System.out.println("Max exposure position: " + Integer.toString(maxIntensity));
-		
-		// Determine the range of values accepted for linear regression
-		double maxValue = foreground.intensitySet[maxIntensity] - (3*foreground.deviationSet[maxIntensity-1]);
-		double minValue = background.intensitySet[maxIntensity-1] + (3*background.deviationSet[maxIntensity-1]);
 
-		System.out.println("Maximum pixel intensity: " + Double.toString(foreground.maxPixelIntensity[maxIntensity]));
-		System.out.println("Maximum pixel deviation: " + Double.toString(foreground.deviationSet[maxIntensity-1]));
-		System.out.println("Maximum allowed intensity: " + Double.toString(maxValue));
-		System.out.println("Minimum allowed intensity: " + Double.toString(minValue));
-
+		exposureFit = Arrays.copyOfRange(exposureSet, 0, maxIntensity);
 		// This should loop should be optimized.
 		for (int i=0; i<flen; i++) {
-			dIntensity = new float[zlen];
-			j = 0;
-			k = 0;
-			for (int m = 0; m<zlen; m++) {
-				background.meanImage.setPosition(m+1);
-				meanImage.setPosition(m+1);
-				bPixels = (float[]) background.meanImage.getProcessor().getPixels();
-				cPixels = (float[]) meanImage.getProcessor().getPixels();
-
-				dIntensity[m] = (cPixels[i] - bPixels[i]);
-				if (cPixels[i]>maxValue) {
-					break;
-				} else if (cPixels[i]<minValue) {
-					k++;
-				}
-				j = m;
-			}
-			
-			if (j<k) {
-				IJ.log("Error in linear regression bounds estimation.\n" +
-						"This probably means the frames aren't in order of increasing exposure, \n" +
-						"or the background signal distribution overlaps the foreground signal distribution.");
-				IJ.log("Maximum foreground intensity: " + Double.toString(maxPixelIntensity[forelen-1]));
-				IJ.log("Maximum background intensity: " + Double.toString(background.maxPixelIntensity[forelen-1]));
-				IJ.log("Upper Intensity Bound: " + Double.toString(maxValue));
-				IJ.log("Lower Intesity Bound: " + Double.toString(minValue));
-				return new ImagePlus();
-			}
-			
-			exposureFit = new double[j-k];
-			intensityFit = new double[j-k];
-
-			for (int l=0; l<(j-k); l++) {
-				exposureFit[l] = exposureRange[l+k];
-				intensityFit[l] = dIntensity[l+k];
-			}
+			intensityFit = Arrays.copyOfRange(intensitySet, 0, maxIntensity);
 
 			cf = new CurveFitter(exposureFit,intensityFit);
 			cf.doFit(0);
@@ -320,10 +263,13 @@ public class ImageStats {
 			sPixels[i] = (float) curveFitParams[1];
 			rPixels[i] = (float) cf.getRSquared();
 
-			aIntercept += iPixels[i]/flen;
-			aSlope += sPixels[i]/flen;
-			aR += rPixels[i]/flen;
+			aIntercept += iPixels[i];
+			aSlope += sPixels[i];
+			aR += rPixels[i];
 		}
+		aIntercept /= flen;
+		aSlope /= flen;
+		aR /= flen;
 
 		slopeStats.setSliceLabel("Y-Intercept", 1);
 		slopeStats.setPixels(iPixels, 1);
@@ -630,48 +576,43 @@ public class ImageStats {
 		return slopeStats;
 	}
 	
-	public double[] pseudoPoisson() {
-		if (poisson!=null) {
-			return poisson;
-		}
-		if (meanImage==null || meanImage.getNSlices()!=nFrames) {
-			getFrameDeviationAndMean(rawImage);
-		}
-		double maxDev = 0;
-		int pos = 0;
-		for (int i = 0; i<deviationSet.length; i++) {
-			if (maxDev>deviationSet[i]) {
-				pos = i;
-				break;
-			} else {
-				maxDev = deviationSet[i];
+	public double stdEst(double intensity) {
+		/* 
+		 *  This function returns an estimate of what the standard deviation should be for an input
+		 *  intensity.
+		 * 
+		 *  The estimation is based on a linear regression of pixel intensities where the regression is std = a*sqrt(I) + b. Pixel intensities from
+		 *  images at three different exposures are used for this regression.
+	 	 */
+		if (standardDev==null) {
+			if (meanImage==null || meanImage.getNSlices()!=nFrames) {
+				getFrameDeviationAndMean(rawImage);
 			}
-		}
-		int len = width*height;
-		int vol = len*(pos);
-		float[] iPixels = new float[len];
-		float[] dPixels = new float[len];
-		double[] iRegPixels = new double[vol];
-		double[] dRegPixels = new double[vol];
-		for (int i=1;i<=pos;i++) {
-			meanImage.setPosition(i);
-			stdImage.setPosition(i);
-			iPixels = (float[]) meanImage.getProcessor().getPixels();
-			dPixels = (float[]) stdImage.getProcessor().getPixels();
-			for (int j=0;j<len;j++) {
-				iRegPixels[(i-1)*len+j] = iPixels[j];
-				dRegPixels[(i-1)*len+j] = dPixels[j];
+			if (nFrames<3) {
+				IJ.error("Need at least 3 exposure times to estimate standard deviation.");
+				return 0.0;
 			}
+			int len = width*height;
+			int l = 3*len;
+			float[] fMeanPixels = new float[len];
+			float[] fStdPixels = new float[len];
+			double[] dSqrtPixels = new double[l];
+			double[] dStdPixels = new double[l];
+			for (int pos = 1; pos <= 3; pos++) {
+				meanImage.setPosition(pos);
+				stdImage.setPosition(pos);
+				fMeanPixels = (float[]) meanImage.getProcessor().getPixels();
+				fStdPixels = (float[]) stdImage.getProcessor().getPixels();
+				for (int pixel = 0; pixel<len; pixel++) {
+					dSqrtPixels[(pos-1)*len+pixel] = Math.sqrt(fMeanPixels[pixel]);
+					dStdPixels[(pos-1)*len+pixel] = fStdPixels[pixel];
+				}
+			}
+			CurveFitter cf = new CurveFitter(dSqrtPixels,dStdPixels);
+			cf.doFit(0);
+			standardDev = cf.getParams();
 		}
-		CurveFitter cf = new CurveFitter(iRegPixels,dRegPixels);
-		cf.doFit(1);
-		double[] curveFitParams = cf.getParams();
-		poisson = new double[4];
-		poisson[0] = curveFitParams[0];
-		poisson[1] = curveFitParams[1];
-		poisson[2] = curveFitParams[2];
-		poisson[3] = cf.getRSquared();
-		return poisson;
+		
+		return Math.sqrt(intensity)*standardDev[1] + standardDev[0];
 	}
-
 }
