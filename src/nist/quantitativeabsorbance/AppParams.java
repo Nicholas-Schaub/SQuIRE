@@ -383,9 +383,7 @@ public class AppParams {
 		isAutomated = pref.getBoolean("isAutomated", isAutomated);
 		usePreviousCalibration = pref.getBoolean("useAutoShutter", usePreviousCalibration);
 	}
-	
-	public static void updateStatus(double percentComplete) {QuantitativeAbsorptionGUI.getControlPanel().updateStatus(percentComplete);}
-	
+		
 	public static String getISOTimeString() {
 		Timestamp curTime = new Timestamp(Calendar.getInstance().getTimeInMillis());
 		String timeStr = curTime.toString();

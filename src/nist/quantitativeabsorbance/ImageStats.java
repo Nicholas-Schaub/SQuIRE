@@ -58,9 +58,11 @@ public class ImageStats {
 	
 	// Properties related to images captured for absorption
 	double[] standardDev;
+	double rSqr;
 	int minimumPixInt;
 	double bestExp;
 	double bestExpIntensity;
+	int numExp;
 
 	// Provides access to the Micro-Manager Core API (for direct hardware
 	// control)
@@ -122,9 +124,10 @@ public class ImageStats {
 		}
 		
 		getFrameDeviation();
-		int pos = 0;
-		while ((deviationSet[pos] - this.stdEst(intensitySet[pos]))/deviationSet[pos] < 0.025 || pos>deviationSet.length) {
+		int pos = 2;
+		while (Math.abs(deviationSet[pos] - this.stdEst(intensitySet[pos]))/deviationSet[pos] < 0.05) {
 			pos++;
+			if (pos>=deviationSet.length) break;
 		}
 		pos--;
 		
@@ -134,7 +137,7 @@ public class ImageStats {
 		
 		double intensity = curveFitParams[0] + curveFitParams[1]*exposure;
 		
-		double deviation = standardDev[0] + standardDev[1]*intensity;
+		double deviation = standardDev[0] + standardDev[1]*Math.sqrt(intensity);
 		
 		return (int) (deviation*deviation);
 	}
@@ -150,9 +153,11 @@ public class ImageStats {
 		}
 		
 		getFrameDeviation();
-		int pos = 0;
-		while ((deviationSet[pos] - this.stdEst(intensitySet[pos]))/deviationSet[pos] < 0.05 || pos>deviationSet.length) {
+		
+		int pos = 2;
+		while (Math.abs(deviationSet[pos] - this.stdEst(intensitySet[pos]))/deviationSet[pos] < 0.05) {
 			pos++;
+			if (pos>=deviationSet.length) break;
 		}
 		pos--;
 
@@ -160,8 +165,14 @@ public class ImageStats {
 		cf.doFit(0);
 		double[] curveFitParams = cf.getParams();
 		
-		bestExp = ((core_.getImageBitDepth() - curveFitParams[0])/curveFitParams[1]) - 2*this.stdEst(core_.getImageBitDepth());
+		double bitDepth = Math.pow(2, core_.getImageBitDepth());
+		bestExp = (bitDepth - 3*this.stdEst(bitDepth) - curveFitParams[0])/curveFitParams[1];
 		bestExpIntensity = curveFitParams[0] + curveFitParams[1]*bestExp;
+		
+		System.out.println("Intercept: " + curveFitParams[0]);
+		System.out.println("Slope: " + curveFitParams[1]);
+		System.out.println("Max value: " + bitDepth);
+		System.out.println("Estimated STD: " + this.stdEst(bitDepth));
 		
 		return bestExp;
 	}
@@ -182,14 +193,24 @@ public class ImageStats {
 		 *  on the input intensity value provided.
 		 */
 		double ln = Math.log(10);
-		double sigmaI = Math.pow(this.stdEst(intensity)/(intensity*ln), 2);
-		double sigmaIo = Math.pow(this.stdEst(this.bestExposureIntensity()/(this.bestExposureIntensity()*ln)), 2);
+		double dIntensity = (double) intensity;
+		double dBestInt;
+		double dSTD;
+		if (nFrames==1) {
+			dBestInt = intensitySet[0];
+			dSTD = deviationSet[0];
+		} else {
+			dBestInt = bestExposureIntensity();
+			dSTD = this.stdEst(dBestInt);
+		}
+		double sigmaI = Math.pow(this.stdEst(dIntensity)/(dIntensity*ln), 2);
+		double sigmaIo = Math.pow(dSTD/(dBestInt*ln), 2);
 		
 		double sigmaA = Math.sqrt(sigmaI + sigmaIo);
 		
 		return sigmaA;
 	}
-	
+		
 	public int minConfPix(int numExp) {
 		/*  
 		 *  This function returns an integer value that corresponds to a minimum pixel intensity
@@ -202,13 +223,18 @@ public class ImageStats {
 		 */
 		double sqrtN = Math.sqrt(numExp);
 		double z = 1.96;
-		int intensity = bestExposureIntensity();
+		int intensity;
+		if (nFrames==1) {
+			intensity = (int) intensitySet[0];
+		} else {
+			intensity = bestExposureIntensity();
+		}
 		double test = z*this.absSigma(intensity)/sqrtN;
-		while (test < 0.01 || intensity<=0) {
+		while (test < 0.01 && intensity>0) {
 			test = z*this.absSigma(--intensity)/sqrtN;
 		}
 		
-		return (int) intensity;
+		return intensity;
 	}
 
 	// Performs linear regression on all pixels in an image - Last edit -> NJS 2015-08-28
@@ -242,14 +268,19 @@ public class ImageStats {
 		CurveFitter cf;
 		double[] curveFitParams = new double[2];
 		
-		int maxIntensity = 0;
-		while ((deviationSet[maxIntensity] - this.stdEst(intensitySet[maxIntensity]))/deviationSet[maxIntensity] < 0.05 || maxIntensity>deviationSet.length) {
+		int maxIntensity = 2;
+		while (Math.abs(deviationSet[maxIntensity] - this.stdEst(intensitySet[maxIntensity]))/deviationSet[maxIntensity] < 0.05) {
 			maxIntensity++;
+			if (maxIntensity>=deviationSet.length) break;
 		}
 		maxIntensity--;
 		
 		System.out.println("Exposure positions: " + Integer.toString(intensitySet.length));
 		System.out.println("Max exposure position: " + Integer.toString(maxIntensity));
+		System.out.println("Error at " + exposureSet[maxIntensity] + "ms exposure: " + Math.abs(deviationSet[maxIntensity] - this.stdEst(intensitySet[maxIntensity]))/deviationSet[maxIntensity]);
+		if (maxIntensity!=deviationSet.length-1) {
+			System.out.println("Error at " + exposureSet[maxIntensity+1] + "ms exposure: " + Math.abs(deviationSet[maxIntensity+1] - this.stdEst(intensitySet[maxIntensity+1]))/deviationSet[maxIntensity+1]);
+		}
 
 		exposureFit = Arrays.copyOfRange(exposureSet, 0, maxIntensity);
 		// This should loop should be optimized.
@@ -592,27 +623,19 @@ public class ImageStats {
 				IJ.error("Need at least 3 exposure times to estimate standard deviation.");
 				return 0.0;
 			}
-			int len = width*height;
-			int l = 3*len;
-			float[] fMeanPixels = new float[len];
-			float[] fStdPixels = new float[len];
-			double[] dSqrtPixels = new double[l];
-			double[] dStdPixels = new double[l];
-			for (int pos = 1; pos <= 3; pos++) {
-				meanImage.setPosition(pos);
-				stdImage.setPosition(pos);
-				fMeanPixels = (float[]) meanImage.getProcessor().getPixels();
-				fStdPixels = (float[]) stdImage.getProcessor().getPixels();
-				for (int pixel = 0; pixel<len; pixel++) {
-					dSqrtPixels[(pos-1)*len+pixel] = Math.sqrt(fMeanPixels[pixel]);
-					dStdPixels[(pos-1)*len+pixel] = fStdPixels[pixel];
-				}
+
+			double[] dSqrtPixels = new double[3];
+			double[] dStdPixels = new double[3];
+			for (int i = 0; i<3; i++) {
+				dSqrtPixels[i] = Math.sqrt(intensitySet[i]);
+				dStdPixels[i] = deviationSet[i];
 			}
 			CurveFitter cf = new CurveFitter(dSqrtPixels,dStdPixels);
 			cf.doFit(0);
 			standardDev = cf.getParams();
+			rSqr = cf.getRSquared();
 		}
-		
+
 		return Math.sqrt(intensity)*standardDev[1] + standardDev[0];
 	}
 }

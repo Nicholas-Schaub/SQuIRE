@@ -27,13 +27,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
 
-<<<<<<< HEAD
 import org.micromanager.utils.MMScriptException;
 
 import com.swtdesigner.SwingResourceManager;
 
-=======
->>>>>>> refs/remotes/origin/master
 import mmcorej.StrVector;
 import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
@@ -59,24 +56,13 @@ implements ActionListener
 	private JToggleButton useManual;
 	private JToggleButton useAutomated;
 	private ButtonGroup manualAutoGroup;
-	private TextFieldInputPanel<Double> minExposureInput;
-	private TextFieldInputPanel<Double> maxExposureInput;
-	private TextFieldInputPanel<Integer> numReplicatesInput;
 	
 	// General Capture Settings
 	private JPanel generalSettingsPanel;
-<<<<<<< HEAD
 	private DirectoryChooserPanel outputDirectory;
 	private TextFieldInputPanel<Integer> numReplicatesInput;
-=======
->>>>>>> refs/remotes/origin/master
 	private TextFieldInputPanel<String> plateIdInput;
-<<<<<<< HEAD
-=======
-	private DirectoryChooserPanel outputDirectory;
-	
-	// Save Settings
->>>>>>> refs/remotes/origin/master
+
 	
 	// Manual Capture Settings
 	private JPanel manualSettingsPanel;
@@ -95,17 +81,9 @@ implements ActionListener
 	private JPanel transmittedPanel;
 	private JLabel transmittedShutterLabel;
 	private JComboBox transmittedShutter;
-<<<<<<< HEAD
 	private JLabel transmittedTurretLabel;
 	private JComboBox transmittedTurret;
 	private JCheckBox useAutoFocus;
-	private JProgressBar captureProgressBar;
-=======
-	private JLabel fluorescentTurretLabel;
-	private JLabel condenserTurretLabel;
-	private JComboBox fluorescentTurret;
-	private JComboBox condenserTurret;
->>>>>>> refs/remotes/origin/master
 	private JTable channelSettings;
 	private DefaultTableModel dtm;
 	private JButton addChannelButton;
@@ -139,32 +117,16 @@ implements ActionListener
 				useManual.setFocusPainted(false);
 				useAutomated = new JToggleButton("Use Automated Settings");
 				useAutomated.setFocusPainted(false);
-			manualAutoGroup.add(useManual);
-			manualAutoGroup.add(useAutomated);
-			numReplicatesInput = new TextFieldInputPanel("Replicates: ", Integer.toString(AppParams.getNumReplicates()),5, new ValidatorInt(0,53));
-			numReplicatesInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
-			minExposureInput = new TextFieldInputPanel("Min Exposure (ms): ", Double.toString(AppParams.getMinExposure()),5, new ValidatorDbl(0.001,503));
-			minExposureInput.setToolTipText("<html>Please enter the minimum exposure to use for imaging.");
-			maxExposureInput = new TextFieldInputPanel("Max Exposure (ms): ", Double.toString(AppParams.getMaxExposure()),5, new ValidatorDbl(0,10007));
-			maxExposureInput.setToolTipText("<html>Please enter the maximum exposure to use for imaging.");
 			
 		// General Settings Panel
 		generalSettingsPanel = new JPanel(new GridBagLayout());
 		generalSettingsPanel.setBorder(BorderFactory.createTitledBorder("General Settings"));
-<<<<<<< HEAD
-=======
-			plateIdInput = new TextFieldInputPanel("Sample Name: ", AppParams.getPlateID(), new ValidatorPrefix());
-			plateIdInput.setToolTipText("<html>Please enter the name of the sample (used for saving files).</html>");
->>>>>>> refs/remotes/origin/master
 			outputDirectory = new DirectoryChooserPanel("Save Directory:", AppParams.getCoreSaveDir(), 30);
 			outputDirectory.setToolTipText("<html>Where all of the data, images, and <br>metadata will be saved.</html>");
-<<<<<<< HEAD
 			plateIdInput = new TextFieldInputPanel("Sample Name: ", AppParams.getPlateID(), new ValidatorPrefix());
 			plateIdInput.setToolTipText("<html>Please enter the name of the sample (used for saving files).</html>");
 			numReplicatesInput = new TextFieldInputPanel("Number of replicates at each exposure: ", Integer.toString(AppParams.getNumReplicates()), new ValidatorInt(0,53));
 			numReplicatesInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
-=======
->>>>>>> refs/remotes/origin/master
 
 		// Manual Settings Panel
 		manualSettingsPanel = new JPanel(new GridBagLayout());
@@ -179,7 +141,6 @@ implements ActionListener
 		// Automated Settings Panel
 		automatedSettingsPanel = new JPanel(new GridBagLayout());
 		automatedSettingsPanel.setBorder(BorderFactory.createTitledBorder("Automated Capture Settings"));
-<<<<<<< HEAD
 			fluorescentPanel = new JPanel(new GridBagLayout());
 			fluorescentPanel.setBorder(BorderFactory.createTitledBorder("Fluorescent Settings"));
 				fluorescentShutterLabel = new JLabel("Shutter");
@@ -193,24 +154,11 @@ implements ActionListener
 				transmittedTurretLabel = new JLabel("Turret");
 				transmittedTurret = new JComboBox();
 
-=======
-			automatedDescription = new JLabel();
-			automatedDescription.setText("Use these settings in addition to the Plate Scan tab to automatically capture images.");
-			fluorescentShutterLabel = new JLabel("Fluorescent Shutter");
-			fluorescentShutter = new JComboBox();
-			fluorescentTurretLabel = new JLabel("Fluorescent Turret");
-			fluorescentTurret = new JComboBox();
-			transmittedShutterLabel = new JLabel("Transmitted Shutter");
-			transmittedShutter = new JComboBox();
-			condenserTurretLabel =  new JLabel("Condesner Turret");
-			condenserTurret = new JComboBox();
->>>>>>> refs/remotes/origin/master
 			StrVector shutterDevices = AppParams.getShutterDevices();
 			for (int i=0; i<shutterDevices.size(); i++) {
 				fluorescentShutter.addItem(shutterDevices.get(i));
 				transmittedShutter.addItem(shutterDevices.get(i));
 			}
-<<<<<<< HEAD
 			fluorescentShutter.setSelectedIndex(0);
 			transmittedShutter.setSelectedIndex(0);
 			StrVector stateDevices = AppParams.getStateDevices();
@@ -223,13 +171,7 @@ implements ActionListener
 			
 			useAutoFocus = new JCheckBox();
 			useAutoFocus.setText("Use Autofocus");
-=======
-			StrVector stateDevices = AppParams.getStateDevices();
-			for (int i = 0; i<stateDevices.size();i++) {
-				fluorescentTurret.addItem(stateDevices.get(i));
-				condenserTurret.addItem(stateDevices.get(i));
-			}
->>>>>>> refs/remotes/origin/master
+
 			addChannelButton = new JButton("Add Channel");
 			addChannelButton.setIcon(SwingResourceManager.getIcon(ControlPanel.class, "/plus.png"));
 			removeChannelButton = new JButton("Remove Channel");
@@ -296,31 +238,13 @@ implements ActionListener
 		c.anchor = GridBagConstraints.LINE_START;
 		c.gridx++;
 		startStopPanel.add(useAutomated,c);
-		c.gridy++;
-		c.gridx = 0;
-		c.anchor = GridBagConstraints.CENTER;
-		c.gridwidth = 2;
-		startStopPanel.add(outputDirectory,c);
-		c.gridy++;
-		c.gridwidth = 1;
-		c.gridx = 0;
-		startStopPanel.add(plateIdInput,c);
-		c.gridx++;
-		startStopPanel.add(numReplicatesInput,c);
-		c.gridy++;
-		c.gridx = 0;
-		c.gridwidth = 1;
-		startStopPanel.add(minExposureInput,c);
-		c.gridx++;
-		startStopPanel.add(maxExposureInput,c);
-		c.anchor = GridBagConstraints.CENTER;
-		c.fill = GridBagConstraints.BOTH;
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipadx = 0;
-		c.gridwidth = 2;
+		c.gridwidth = 1;
+		c.anchor = GridBagConstraints.CENTER;
+		c.fill = GridBagConstraints.BOTH;
 		content.add(startStopPanel, c);
-<<<<<<< HEAD
 		
 		// Create General Settings panel
 		c.ipadx = 0;
@@ -335,12 +259,9 @@ implements ActionListener
 		c.gridy++;
 		generalSettingsPanel.add(plateIdInput,c);
 		c.gridx++;
-		c.gridx = 0;
-		c.gridx = 1;
 		generalSettingsPanel.add(numReplicatesInput,c);
+		c.gridx = 0;
 		content.add(generalSettingsPanel,c);
-=======
->>>>>>> refs/remotes/origin/master
 		
 		// Create Manual Settings Panel
 		c.fill = GridBagConstraints.NONE;
@@ -359,30 +280,12 @@ implements ActionListener
 		content.add(manualSettingsPanel,c);
 
 		// Create Automated Settings Panel
-<<<<<<< HEAD
 		c.fill = GridBagConstraints.BOTH;
-=======
-		c.gridy = 0;
-		c.fill = GridBagConstraints.NONE;
-		c.anchor = GridBagConstraints.CENTER;
-		//automatedSettingsPanel.add(automatedDescription,c);
-		//c.gridy++;
->>>>>>> refs/remotes/origin/master
 		c.gridwidth = 1;
 		c.gridy = 0;
 		transmittedPanel.add(transmittedShutterLabel,c);
 		c.gridx++;
-<<<<<<< HEAD
 		transmittedPanel.add(transmittedShutter,c);
-=======
-		c.gridwidth = 3;
-		automatedSettingsPanel.add(fluorescentShutter,c);
-		c.gridwidth = 1;
-		c.gridx += 3;
-		automatedSettingsPanel.add(fluorescentTurretLabel,c);
-		c.gridx++;
-		automatedSettingsPanel.add(fluorescentTurret,c);
->>>>>>> refs/remotes/origin/master
 		c.gridy++;
 		transmittedPanel.add(transmittedTurret,c);
 		c.gridx--;
@@ -395,7 +298,6 @@ implements ActionListener
 		c.gridwidth = 1;
 		fluorescentPanel.add(fluorescentShutterLabel,c);
 		c.gridx++;
-<<<<<<< HEAD
 		fluorescentPanel.add(fluorescentShutter,c);
 		c.gridy++;
 		fluorescentPanel.add(fluorescentTurret,c);
@@ -405,29 +307,20 @@ implements ActionListener
 		c.gridy = 0;
 		automatedSettingsPanel.add(fluorescentPanel,c);
 		
-=======
-		c.gridwidth = 3;
-		automatedSettingsPanel.add(transmittedShutter,c);
->>>>>>> refs/remotes/origin/master
-		c.gridwidth = 1;
-		c.gridx += 3;
-		automatedSettingsPanel.add(condenserTurretLabel,c);
-		c.gridx++;
-		automatedSettingsPanel.add(condenserTurret,c);
-		c.gridx = 3;
+		c.gridx = 0;
 		c.gridy++;
 		automatedSettingsPanel.add(addChannelButton,c);
 		c.gridx++;
 		automatedSettingsPanel.add(removeChannelButton,c);
 		c.gridy++;
 		c.gridx = 0;
-		c.gridwidth = 6;
+		c.gridwidth = 2;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		automatedSettingsPanel.add(new JScrollPane(channelSettings),c);
 		c.gridy = 4;
 		c.fill = GridBagConstraints.BOTH;
 		c.anchor = GridBagConstraints.CENTER;
-		c.gridwidth = 2;
+		c.gridwidth = 1;
 		content.add(automatedSettingsPanel,c);
 		
 		if (AppParams.getIsAutomated()) {
@@ -439,12 +332,12 @@ implements ActionListener
 		}
 		
 		// Nist Logo and About
-		c.fill = GridBagConstraints.NONE;
-		c.gridy++;
-		c.gridwidth = 1;
-		c.gridx = 1;
-		c.anchor = GridBagConstraints.CENTER;
-		content.add(new AddNistLogo(90,30),c);
+//		c.fill = GridBagConstraints.NONE;
+//		c.gridy++;
+//		c.gridwidth = 1;
+//		c.gridx = 1;
+//		c.anchor = GridBagConstraints.CENTER;
+//		content.add(new AddNistLogo(90,30),c);
 		
 		add(content,BorderLayout.NORTH);
 	}
@@ -624,12 +517,7 @@ implements ActionListener
 	public String getFluorescentShutter() {return fluorescentShutter.getSelectedItem().toString();}
 	
 	public String getTransmittedShutter() {return transmittedShutter.getSelectedItem().toString();}
-	
-<<<<<<< HEAD
-	public void updateStatus(double percentComplete) {captureProgressBar.setValue((int)(percentComplete * 100.0D));}
-	
-=======
->>>>>>> refs/remotes/origin/master
+
 	public boolean isAutomated() {return useAutomated.isSelected();}
 	
 	public String getCoreSaveDirectory() {return outputDirectory.getValue();}

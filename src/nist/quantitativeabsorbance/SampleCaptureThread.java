@@ -138,11 +138,11 @@ public class SampleCaptureThread implements Runnable {
 							sampleLabel = channelName.get(j) + " - Light On Blank";
 							AppParams.setCurrentSampleName(sampleLabel);
 							ImageStats lightStats = new ImageStats(sampleLabel,"");
-							lightStats.pixelLinReg(lightStats, AppParams.getDarkBlank());
+							lightStats.pixelLinReg();
 							AppParams.addLightBlank(lightStats);
 							System.out.println("Added Light Blank!");
 							IJ.saveAsTiff(lightStats.rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LinReg");
-							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j), lightStats.bestExposure(), lightStats.samplesForBlank(lightStats.bestExposure()));
+							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j), lightStats.bestExposure(), lightStats.numBlankSamples(lightStats.bestExposure()));
 							ImageStats foreground = new ImageStats(foregroundRaw);
 							AppParams.addForeground(foreground.getFrameMean());
 							AppParams.setChannelExposure(j, lightStats.bestExposure());
@@ -263,7 +263,6 @@ public class SampleCaptureThread implements Runnable {
 							IJ.saveAsTiff(currentSample, AppParams.getChannelImageDir(j) + sampleLabel);
 						}
 					}
-					AppParams.updateStatus(((double)(i-2))/((double) AppParams.getNumSamples()));
 
 				}
 				
