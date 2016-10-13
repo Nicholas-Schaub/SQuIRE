@@ -13,6 +13,7 @@ import javax.swing.JPanel;
 
 import org.micromanager.utils.MMScriptException;
 
+import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
 import nist.quantitativeabsorbance.AppParams;
 import nist.textfield.TextFieldInputPanel;
@@ -27,6 +28,8 @@ implements ActionListener
 	private TextFieldInputPanel<Double> equilibriumInput;
 	private TextFieldInputPanel<Double> fluctuationInput;
 	private JCheckBox showGraph;
+	private JCheckBox saveBenchmarkingExcel;
+	private JCheckBox saveBenchmarkingTxt;
 
 	public BenchmarkingPanel()
 	{
@@ -50,6 +53,12 @@ implements ActionListener
 		
 		showGraph = new JCheckBox("Show Graph", AppParams.getBenchmarkVisible());
 		showGraph.setToolTipText("<html>Run a pixel by pixel benchmark instead of obtaining absorption values.</html>");
+		
+		saveBenchmarkingExcel = new JCheckBox("Save Benchmarking Data to Spreadsheet", AppParams.saveBenchmarkExcel());
+		saveBenchmarkingExcel.setToolTipText("<html>Save the data acquired by the benchmarking protocol to an excel spreadsheet.</html>");
+		
+		saveBenchmarkingTxt = new JCheckBox("Save Benchmarking Data to Text File", AppParams.saveBenchmarkTxt());
+		saveBenchmarkingExcel.setToolTipText("<html>Save the data acquired by the benchmarking protocol to a tab delimited file.</html>");
 
 		//aboutButton = new JButton("About");
 		//aboutButton.setToolTipText("<html>This takes you to the NIST Fluorescence <br>Microscope Benchmarking website.<br><i>Plugin Version 1.0</i></html>");
@@ -89,6 +98,12 @@ implements ActionListener
 		
 		c.gridy++;
 		content.add(showGraph,c);
+		
+		c.gridy++;
+		content.add(saveBenchmarkingExcel,c);
+		
+		c.gridy++;
+		content.add(saveBenchmarkingTxt,c);
 
 		add(content);
 	}
@@ -142,4 +157,12 @@ implements ActionListener
 	public double getEquilibrium() {return equilibriumInput.getValue();}
 	
 	public void setEquilibrium(double equilibrium) {equilibriumInput.setValue(equilibrium);}
+	
+	public boolean isSaveBenchmarkingExcel() {return saveBenchmarkingExcel.isSelected();}
+	
+	public void setSaveBenchmarkingExcel(boolean saveBenchmarkingExcel) {this.saveBenchmarkingExcel.setSelected(saveBenchmarkingExcel);}
+	
+	public boolean isSaveBenchmarkingTxt() {return saveBenchmarkingTxt.isSelected();}
+	
+	public void setSaveBenchmarkingTxt(boolean saveBenchmarkingTxt) {this.saveBenchmarkingTxt.setSelected(saveBenchmarkingTxt);}
 }

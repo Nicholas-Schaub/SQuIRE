@@ -1,11 +1,5 @@
 package nist.quantitativeabsorbance;
 
-import ij.IJ;
-import ij.ImagePlus;
-import ij.gui.Plot;
-import ij.measure.ResultsTable;
-import ij.process.ColorProcessor;
-
 import java.awt.Color;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,6 +10,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import javax.swing.JOptionPane;
+
+import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.Plot;
+import ij.measure.ResultsTable;
+import ij.process.ColorProcessor;
+
 
 public class BenchmarkingThread implements Runnable {
 	ResultsTable benchmarkingResults = new ResultsTable();
@@ -169,7 +170,8 @@ public class BenchmarkingThread implements Runnable {
 				
 				if (AppParams.saveBenchmarkTxt()) {
 					writeResults(elapsedTime,slope,absorption);
-				} else if (AppParams.saveBenchmarkExcel()) {
+				}
+				if (AppParams.saveBenchmarkExcel()) {
 					addResult(elapsedTime,currentSlope,benchmarkAbsorption);
 					benchmarkingResults.saveAs(AppParams.getOutDir() + "BenchmarkingResults.csv");
 				}

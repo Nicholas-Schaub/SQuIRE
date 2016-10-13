@@ -15,7 +15,7 @@ import org.micromanager.api.ScriptInterface;
 import org.micromanager.utils.AutofocusManager;
 import org.micromanager.utils.MMScriptException;
 
-public class SampleCaptureThread implements Runnable {
+public class AutomatedCaptureThread implements Runnable {
 	private ImagePlus currentSample;
 	private String sampleLabel;
 	private ScriptInterface app_ = AppParams.getApp_();
@@ -33,8 +33,6 @@ public class SampleCaptureThread implements Runnable {
 	private int numChannels;
 	private int numReplicates = AppParams.getNumReplicates();
 	
-	private boolean usePreviousCalibration;
-	
     public void run() {
 		AppParams params = AppParams.getInstance();
 		SimpleCapture cap = new SimpleCapture(false);
@@ -48,47 +46,24 @@ public class SampleCaptureThread implements Runnable {
 		channelExposure = AppParams.getChannelExposures();
 		channelOffset = AppParams.getChannelOffset();
 		numChannels = AppParams.getChannels();
-		usePreviousCalibration = AppParams.usePreviousCalibration();
 		
 		int start = 0;
-		
-		if (usePreviousCalibration) {
-			start = 2;
-			for (int j = 0; j<numChannels; j++) {
-				IJ.saveAsTiff(AppParams.getLightBlank(j).rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LinReg");
-				IJ.saveAsTiff(AppParams.getForeground(j), AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LightBlank");
-				IJ.saveAsTiff(AppParams.getDarkBlank().rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-DarkBlank");
-				AppParams.setChannelExposure(j, AppParams.getLightBlank(j).bestExposure());
-			}
-		}
 		
 		try {
 			AutofocusManager afm_ = app_.getAutofocusManager();
 			afm_.refresh();
 			
-			if (AppParams.getIsAutomated()) {
-				platePl = app_.getPositionList();
-			}
-			
+			platePl = app_.getPositionList();
+						
 			if (AppParams.hasAutoShutter()) {
 				core_.setShutterDevice(AppParams.getTransmittedShutter());
-				if (usePreviousCalibration) {
-					core_.setShutterOpen(true);
-				} else {
-					core_.setShutterOpen(false);
-				}
 			}
 			
 			// Collect stats for each pixel in each channel at multiple exposures.
 			for (int i=start; i<AppParams.getNumSamples()+2; i++) {
 				if (i==0) {
 					
-					if (!AppParams.getIsAutomated()) {
-						JOptionPane.showMessageDialog(null,
-							"Please move your sample to an empty well and turn the bright field light OFF.",
-							"Quantitative Absorption Plugin",
-							JOptionPane.PLAIN_MESSAGE);
-					} else if (!platePl.getPosition(0).getLabel().endsWith("BLANKWELL")) {
+					if (!platePl.getPosition(0).getLabel().endsWith("BLANKWELL")) {
 						core_.setShutterOpen(true);
 						app_.enableLiveMode(true);
 						JOptionPane.showMessageDialog(null,
@@ -110,13 +85,6 @@ public class SampleCaptureThread implements Runnable {
 					if (AppParams.hasAutoShutter()) {
 						core_.setShutterDevice(AppParams.getTransmittedShutter());
 						core_.setShutterOpen(true);
-					}
-					
-					if (!AppParams.getIsAutomated()) {
-						JOptionPane.showMessageDialog(null,
-							"Please move your sample to an empty well and turn the bright field light ON.",
-							"Quantitative Absorption Plugin",
-							JOptionPane.PLAIN_MESSAGE);
 					}
 					
 					for (int j = 0; j<numChannels; j++) {
@@ -152,37 +120,22 @@ public class SampleCaptureThread implements Runnable {
 					}
 
 				} else if (i>1) {
-					if (!AppParams.getIsAutomated() && i==2) {
-						JOptionPane.showMessageDialog(null,
-							"Please move sample #" + Integer.toString(i-1) + " into view.",
-							"Quantitative Absorption Plugin",
-							JOptionPane.PLAIN_MESSAGE);
-						sampleLabel = "Sample #"+Integer.toString(i-1);
-					} else if (!AppParams.getIsAutomated()) {
-						JOptionPane.showMessageDialog(null,
-							"Please move sample #" + Integer.toString(i-1) + " into view.",
-							"Quantitative Absorption Plugin",
-							JOptionPane.PLAIN_MESSAGE);
-						sampleLabel = "Sample #"+Integer.toString(i-1);
-					} else {
-						
-						core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
-						core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
-						
-						sampleLabel = platePl.getPosition(i-2).getLabel();
-						long startTime = System.currentTimeMillis();
-						MultiStagePosition.goToPosition(platePl.getPosition(i-2), core_);
-						System.out.print("Stage move time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
+					core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
+					core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
+					
+					sampleLabel = platePl.getPosition(i-2).getLabel();
+					long startTime = System.currentTimeMillis();
+					MultiStagePosition.goToPosition(platePl.getPosition(i-2), core_);
+					System.out.print("Stage move time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
 
-						startTime = System.currentTimeMillis();
-						if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
-							core_.setShutterOpen(false);
-							core_.setShutterDevice(AppParams.getTransmittedShutter());
-							core_.setShutterOpen(true);
-						}
-						System.out.print("Shutter open time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
-						System.out.println("Position: " + platePl.getPosition(i-2).getLabel());
+					startTime = System.currentTimeMillis();
+					if (!core_.getShutterDevice().equals(AppParams.getTransmittedShutter())) {
+						core_.setShutterOpen(false);
+						core_.setShutterDevice(AppParams.getTransmittedShutter());
+						core_.setShutterOpen(true);
 					}
+					System.out.print("Shutter open time: " + Long.toString(System.currentTimeMillis()-startTime) + "\n");
+					System.out.println("Position: " + platePl.getPosition(i-2).getLabel());
 					
 					int currentAbsorb = 0;
 					
@@ -213,7 +166,7 @@ public class SampleCaptureThread implements Runnable {
 								core_.waitForSystem();
 							}
 
-							long startTime = System.currentTimeMillis();
+							startTime = System.currentTimeMillis();
 							currentSample = cap.threshCaptureSeries(sampleLabel, channelExposure.get(j), numReplicates, AppParams.getLightBlank(currentAbsorb).minConfPix(numReplicates));
 							//currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,5)), numReplicates);
 							long captureTime = System.currentTimeMillis(); 

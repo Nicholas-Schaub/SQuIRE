@@ -192,7 +192,7 @@ public class AppParams {
 		if (callSource instanceof BenchmarkingPanel) {
 			thread = new Thread(new BenchmarkingThread());
 		} else if (callSource instanceof ControlPanel) {
-			thread = new Thread(new SampleCaptureThread());
+			thread = new Thread(new AutomatedCaptureThread());
 		}
 		
 		thread.start();
@@ -210,8 +210,8 @@ public class AppParams {
 
 		plateID = QuantitativeAbsorptionGUI.getControlPanel().getPlateId();
 		coreSaveDir = QuantitativeAbsorptionGUI.getControlPanel().getCoreSaveDirectory();
-		saveBenchmarkingExcel = QuantitativeAbsorptionGUI.getSaveSettingsPanel().isSaveBenchmarkingExcel();
-		saveBenchmarkingTxt = QuantitativeAbsorptionGUI.getSaveSettingsPanel().isSaveBenchmarkingTxt();
+		saveBenchmarkingExcel = QuantitativeAbsorptionGUI.getBenchmarkingPanel().isSaveBenchmarkingExcel();
+		saveBenchmarkingTxt = QuantitativeAbsorptionGUI.getBenchmarkingPanel().isSaveBenchmarkingTxt();
 		isAutomated = QuantitativeAbsorptionGUI.getControlPanel().isAutomated();
 		numReplicates = QuantitativeAbsorptionGUI.getControlPanel().getNumReplicates();
 		numSamples = QuantitativeAbsorptionGUI.getControlPanel().getNumSample();

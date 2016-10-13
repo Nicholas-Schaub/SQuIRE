@@ -19,7 +19,6 @@ public class QuantitativeAbsorptionGUI extends JFrame {
 	
 	private static ControlPanel controlPanel;
 	private static BenchmarkingPanel benchmarkingPanel;
-	private static SaveSettingsPanel saveSettingsPanel;
 	private static PlateConfigPanel plateConfigPanel;
 	
 	public QuantitativeAbsorptionGUI() throws Exception {
@@ -55,9 +54,6 @@ public class QuantitativeAbsorptionGUI extends JFrame {
 		benchmarkingPanel = new BenchmarkingPanel();
 		tabbedPane.add("Benchmarking", benchmarkingPanel);
 		
-		saveSettingsPanel = new SaveSettingsPanel();
-		tabbedPane.add("Save Settings",saveSettingsPanel);
-		
 		plateConfigPanel = new PlateConfigPanel();
 		tabbedPane.add("Plate Scan",plateConfigPanel);
 		
@@ -65,10 +61,6 @@ public class QuantitativeAbsorptionGUI extends JFrame {
 
 		setLayout(new BorderLayout());
 		add(tabbedPane, "Center");
-	}
-	
-	public static SaveSettingsPanel getSaveSettingsPanel() {
-		return saveSettingsPanel;
 	}
 	
 	public static ControlPanel getControlPanel() {

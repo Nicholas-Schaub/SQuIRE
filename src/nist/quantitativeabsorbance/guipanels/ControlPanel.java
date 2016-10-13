@@ -233,10 +233,12 @@ implements ActionListener
 		c.gridx = 0;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.LINE_END;
+		manualAutoGroup.add(useManual);
 		startStopPanel.add(useManual,c);
 		useManual.setSelected(true);
 		c.anchor = GridBagConstraints.LINE_START;
 		c.gridx++;
+		manualAutoGroup.add(useAutomated);
 		startStopPanel.add(useAutomated,c);
 		c.gridx = 0;
 		c.gridy = 0;
