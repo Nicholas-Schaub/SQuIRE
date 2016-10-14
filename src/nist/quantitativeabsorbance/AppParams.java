@@ -223,6 +223,7 @@ public class AppParams {
 			numSamples = app_.getPositionList().getNumberOfPositions();
 			Object[][] automatedSettings = QuantitativeAbsorptionGUI.getControlPanel().getAutomatedSettings();
 			channels = automatedSettings.length;
+			System.out.println(channels);
 			fluorescentDevice = new StrVector();
 			fluorescentDeviceSetting = new StrVector();
 			transmittedDevice = new StrVector();

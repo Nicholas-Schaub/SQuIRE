@@ -44,6 +44,8 @@ public class BenchmarkingThread implements Runnable {
 		aggregateProcessor.insert(absorptionPlot.getProcessor(),width,0);
 		plotAggregator.setProcessor(aggregateProcessor);
 		
+		(new File(AppParams.getOutDir())).mkdirs();
+		
 		if (AppParams.getBenchmarkVisible()) {
 			plotAggregator.show();
 		}

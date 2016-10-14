@@ -62,7 +62,10 @@ public class AutomatedCaptureThread implements Runnable {
 			// Collect stats for each pixel in each channel at multiple exposures.
 			for (int i=start; i<AppParams.getNumSamples()+2; i++) {
 				if (i==0) {
-					
+					if (AppParams.hasAutoShutter()) {
+						core_.setShutterDevice(AppParams.getTransmittedShutter());
+						core_.setShutterOpen(false);
+					}
 					if (!platePl.getPosition(0).getLabel().endsWith("BLANKWELL")) {
 						core_.setShutterOpen(true);
 						app_.enableLiveMode(true);
@@ -75,11 +78,10 @@ public class AutomatedCaptureThread implements Runnable {
 					} else {
 						MultiStagePosition.goToPosition(platePl.getPosition(i), core_);
 					}
-					sampleLabel = "Light off intensity";
+					sampleLabel = "Dark Background";
 					AppParams.setCurrentSampleName(sampleLabel);
 					currentSample = cap.powerCaptureSeries(sampleLabel, 0,(int) Math.pow(2, 8), numReplicates);
 					AppParams.setDarkBlank(new ImageStats(currentSample));
-					IJ.saveAsTiff(currentSample, AppParams.getCoreSaveDir()+currentSample.getTitle());
 				} else if (i==1) {
 					
 					if (AppParams.hasAutoShutter()) {
@@ -103,19 +105,25 @@ public class AutomatedCaptureThread implements Runnable {
 								core_.waitForDevice(transmittedDevice.get(j));
 								core_.waitForDevice(fluorescentDevice.get(j));
 							}
-							sampleLabel = channelName.get(j) + " - Light On Blank";
+							sampleLabel = channelName.get(j) + " - Linear Regression";
 							AppParams.setCurrentSampleName(sampleLabel);
 							ImageStats lightStats = new ImageStats(sampleLabel,"");
 							lightStats.pixelLinReg();
 							AppParams.addLightBlank(lightStats);
 							System.out.println("Added Light Blank!");
-							IJ.saveAsTiff(lightStats.rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LinReg");
-							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j), lightStats.bestExposure(), lightStats.numBlankSamples(lightStats.bestExposure()));
+							Thread linThread = new Thread(new SaveThread(lightStats.rawImage,j,true));
+							linThread.start();
+							//IJ.saveAsTiff(lightStats.rawImage, AppParams.getCalibrationImageDir(j)+lightStats.rawImage.getTitle());
+							//IJ.saveAsTiff(AppParams.getDarkBlank().rawImage, AppParams.getCalibrationImageDir(j)+AppParams.getDarkBlank().rawImage.getTitle());
+							Thread backThread = new Thread(new SaveThread(AppParams.getDarkBlank().rawImage,j,true));
+							backThread.start();
+							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j)+" - Light Background", lightStats.bestExposure(), lightStats.numBlankSamples(lightStats.bestExposure()));
 							ImageStats foreground = new ImageStats(foregroundRaw);
 							AppParams.addForeground(foreground.getFrameMean());
 							AppParams.setChannelExposure(j, lightStats.bestExposure());
-							IJ.saveAsTiff(foreground.rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-LightBlank");
-							IJ.saveAsTiff(AppParams.getDarkBlank().rawImage, AppParams.getCalibrationImageDir(j)+channelName.get(j)+"-DarkBlank");
+							Thread forThread = new Thread(new SaveThread(foreground.rawImage,j,true));
+							forThread.start();
+							//IJ.saveAsTiff(foreground.rawImage, AppParams.getCalibrationImageDir(j)+foreground.rawImage.getTitle());
 						}
 					}
 
@@ -141,10 +149,10 @@ public class AutomatedCaptureThread implements Runnable {
 					
 					for (int j = 0; j<numChannels; j++) {
 						AppParams.setCurrentSampleName(sampleLabel);
-						if (j==0){
-						System.out.print("Focusing...");
-							afm_.getDevice().fullFocus();
-						}
+						//if (j==0){
+						//System.out.print("Focusing...");
+						//	afm_.getDevice().fullFocus();
+						//}
 						if (channelOffset.get(j)!=0) {
 							core_.setRelativePosition(channelOffset.get(j));
 						}
@@ -174,7 +182,7 @@ public class AutomatedCaptureThread implements Runnable {
 							IJ.saveAsTiff(currentSample, AppParams.getRawImageDir(j) + sampleLabel);
 							long saveTime = System.currentTimeMillis();
 							System.out.print("Save time: " + Long.toString(saveTime - captureTime) + "\n");
-							Thread absorptionThread = new Thread(new AbsorptionThread(currentSample,j));
+							Thread absorptionThread = new Thread(new SaveThread(currentSample,j,false));
 							absorptionThread.start();
 							long threadTime = System.currentTimeMillis();
 							System.out.print("Thread initiation time: " + Long.toString(threadTime - saveTime) + "\n");

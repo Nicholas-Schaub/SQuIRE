@@ -496,7 +496,13 @@ implements ActionListener
 	}
 	
 	private void removeChannel() {
-		int rows = dtm.getRowCount();
+		int rows = dtm.getRowCount()-1;
+		fluorescentSetting.remove(rows);
+		transmittedSetting.remove(rows);
+		channelTypeEditor.remove(rows);
+		transSettingEditor.remove(rows);
+		fluoroSettingEditor.remove(rows);
+		
 		dtm.removeRow(rows-1);;
 	}
 	

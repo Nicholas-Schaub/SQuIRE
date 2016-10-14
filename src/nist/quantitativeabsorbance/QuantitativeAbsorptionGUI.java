@@ -1,7 +1,6 @@
 package nist.quantitativeabsorbance;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -11,7 +10,6 @@ import javax.swing.JTabbedPane;
 import nist.quantitativeabsorbance.guipanels.BenchmarkingPanel;
 import nist.quantitativeabsorbance.guipanels.ControlPanel;
 import nist.quantitativeabsorbance.guipanels.PlateConfigPanel;
-import nist.quantitativeabsorbance.guipanels.SaveSettingsPanel;
 
 
 @SuppressWarnings("serial")

@@ -3,15 +3,19 @@ package nist.quantitativeabsorbance;
 import ij.IJ;
 import ij.ImagePlus;
 
-public class AbsorptionThread implements Runnable {
+public class SaveThread implements Runnable {
 
 	private String rawImageDir;
 	private boolean saveRaw;
 	private ImagePlus rawImage;
 	
-	public AbsorptionThread(ImagePlus image, int channelIndex) {
+	public SaveThread(ImagePlus image, int channelIndex, boolean isCalib) {
 		rawImage = image;
-		rawImageDir = AppParams.getRawImageDir(channelIndex);
+		if (isCalib) {
+			rawImageDir = AppParams.getCalibrationImageDir(channelIndex);
+		} else {
+			rawImageDir = AppParams.getRawImageDir(channelIndex);
+		}
 		saveRaw = true;
 	}
 	
