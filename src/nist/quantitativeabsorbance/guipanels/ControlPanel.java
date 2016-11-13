@@ -34,15 +34,10 @@ import com.swtdesigner.SwingResourceManager;
 import mmcorej.StrVector;
 import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
-import nist.logofield.AddNistLogo;
 import nist.quantitativeabsorbance.AppParams;
 import nist.textfield.TextFieldInputPanel;
 import nist.textfield.validator.ValidatorInt;
 import nist.textfield.validator.ValidatorPrefix;
-
-import org.micromanager.utils.MMScriptException;
-
-import com.swtdesigner.SwingResourceManager;
 
 @SuppressWarnings("serial")
 public class ControlPanel
@@ -62,14 +57,7 @@ implements ActionListener
 	private DirectoryChooserPanel outputDirectory;
 	private TextFieldInputPanel<Integer> numReplicatesInput;
 	private TextFieldInputPanel<String> plateIdInput;
-
-	
-	// Manual Capture Settings
-	private JPanel manualSettingsPanel;
-	private JLabel manualDescription;
 	private TextFieldInputPanel<Integer> numSampleInput;
-	private TextFieldInputPanel<Integer> channelInput;
-	private TextFieldInputPanel<Integer> setBenchmarkDelay;
 	
 	// Automated Capture Settings
 	private JPanel automatedSettingsPanel;
@@ -125,18 +113,11 @@ implements ActionListener
 			outputDirectory.setToolTipText("<html>Where all of the data, images, and <br>metadata will be saved.</html>");
 			plateIdInput = new TextFieldInputPanel("Sample Name: ", AppParams.getPlateID(), new ValidatorPrefix());
 			plateIdInput.setToolTipText("<html>Please enter the name of the sample (used for saving files).</html>");
-			numReplicatesInput = new TextFieldInputPanel("Number of replicates at each exposure: ", Integer.toString(AppParams.getNumReplicates()), new ValidatorInt(0,53));
+			numReplicatesInput = new TextFieldInputPanel("Number of replicates at each exposure: ", Integer.toString(AppParams.getNumReplicates()), new ValidatorInt(0,500));
 			numReplicatesInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
-
-		// Manual Settings Panel
-		manualSettingsPanel = new JPanel(new GridBagLayout());
-		manualSettingsPanel.setBorder(BorderFactory.createTitledBorder("Manual Capture Settings"));
-			manualDescription = new JLabel();
-			manualDescription.setText("Use these settings for manually moving samples or switching filters.");
-			numSampleInput = new TextFieldInputPanel("Number of samples: ", Integer.toString(AppParams.getNumSamples()), new ValidatorInt(0, 97));
-			numSampleInput.setToolTipText("<html>Please enter the number of samples to imaged.</html>");
-			channelInput = new TextFieldInputPanel("Number of Channels: ", Integer.toString(AppParams.getChannels()), new ValidatorInt(1,7));
-			channelInput.setToolTipText("<html>Please enter the number of channels used for imaging.");
+			numSampleInput = new TextFieldInputPanel("Number of samples (FOV): ", Integer.toString(AppParams.getNumSamples()), new ValidatorInt(0,1000));
+			numSampleInput.setToolTipText("<html>Please enter the number of replicates for each exposure.");
+			
 			
 		// Automated Settings Panel
 		automatedSettingsPanel = new JPanel(new GridBagLayout());
@@ -181,7 +162,8 @@ implements ActionListener
 					"<html><center>Transmitted<br>Setting</center></html>",
 					"<html><center>Fluorescent<br>Setting</center></html>",
 					"<html><center>Exposure</center></html>",
-					"<html><center>Z-Offset</center></html>"};
+					"<html><center>Z-Offset</center></html>",
+					"<html><center>Use<br>Autofocus</center></html>"};
 			dtm = new DefaultTableModel();
 			dtm.setColumnIdentifiers(columnNames);
 			channelSettings = new JTable(dtm) {
@@ -198,6 +180,15 @@ implements ActionListener
 						return super.getCellEditor(row, column);
 					}
 				}
+	            
+				@Override
+	            public Class getColumnClass(int column) {
+					if (column==6) { 
+						return Boolean.class;
+					} else {
+						return super.getColumnClass(column);
+					}
+	            }
 			};
 			((DefaultTableCellRenderer)channelSettings.getTableHeader().getDefaultRenderer()).setHorizontalAlignment(JLabel.CENTER);
 			addChannel();
@@ -262,24 +253,14 @@ implements ActionListener
 		generalSettingsPanel.add(plateIdInput,c);
 		c.gridx++;
 		generalSettingsPanel.add(numReplicatesInput,c);
-		c.gridx = 0;
-		content.add(generalSettingsPanel,c);
-		
-		// Create Manual Settings Panel
-		c.fill = GridBagConstraints.NONE;
-		c.gridy = 0;
-		c.gridx = 0;
-		manualSettingsPanel.add(manualDescription,c);
+		c.gridx--;
 		c.gridy++;
-		c.gridwidth = 1;
-		manualSettingsPanel.add(numSampleInput,c);
-		c.gridx++;
-		manualSettingsPanel.add(channelInput,c);
-		c.gridy = 3;
 		c.gridwidth = 2;
+		generalSettingsPanel.add(numSampleInput, c);
 		c.gridx = 0;
-		c.fill = GridBagConstraints.HORIZONTAL;
-		content.add(manualSettingsPanel,c);
+		c.gridwidth = 1;
+		c.gridy--;
+		content.add(generalSettingsPanel,c);
 
 		// Create Automated Settings Panel
 		c.fill = GridBagConstraints.BOTH;
@@ -326,11 +307,7 @@ implements ActionListener
 		content.add(automatedSettingsPanel,c);
 		
 		if (AppParams.getIsAutomated()) {
-			useAutomated.setSelected(true);
-			manualSettingsPanel.setVisible(false);
 		} else {
-			useManual.setSelected(true);
-			automatedSettingsPanel.setVisible(false);
 		}
 		
 		// Nist Logo and About
@@ -401,8 +378,6 @@ implements ActionListener
 		useManual.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if (useManual.isSelected()) {
-					manualSettingsPanel.setVisible(true);
-					automatedSettingsPanel.setVisible(false);
 				}
 			}
 		});
@@ -410,8 +385,6 @@ implements ActionListener
 		useAutomated.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
 				if (useAutomated.isSelected()) {
-					manualSettingsPanel.setVisible(false);
-					automatedSettingsPanel.setVisible(true);
 				}
 			}
 		});
@@ -467,7 +440,7 @@ implements ActionListener
 	}
 	
 	private void addChannel() throws Exception {
-		dtm.addRow(new Object[] {"","","","","",""});
+		dtm.addRow(new Object[] {"","","","","","",false});
 		JComboBox channelGroup = new JComboBox();
 		channelGroup.addItem("Absorbance");
 		channelGroup.addItem("Phase/DIC");
@@ -493,6 +466,8 @@ implements ActionListener
 		fluorescentSetting.add(fluoroBox);
 		fluoroSettingEditor.add(new DefaultCellEditor(fluoroBox));
 		dtm.setValueAt(fluoroBox.getSelectedItem().toString(), fluorescentSetting.size()-1, 3);
+
+		dtm.setValueAt(false, fluorescentSetting.size()-1, 6);
 	}
 	
 	private void removeChannel() {
@@ -536,10 +511,6 @@ implements ActionListener
 
 	public void setPlateId(String plateId) {this.plateIdInput.setValue(plateId);}
 	
-	public void setBenchmarkDelay(Integer benchmarkDelay){this.setBenchmarkDelay.setValue(benchmarkDelay);} 
-	
-	public Integer getBenchmarkDelay(){return (Integer) setBenchmarkDelay.getValue();}
-	
 	public void setNumSample(int numSample){this.numSampleInput.setValue(numSample);}
 
 	public Integer getNumSample(){return (Integer) numSampleInput.getValue();}
@@ -547,9 +518,5 @@ implements ActionListener
 	public void setNumReplicates(int numReplicates){this.numReplicatesInput.setValue(numReplicates);}
 
 	public Integer getNumReplicates(){return (Integer) numReplicatesInput.getValue();}
-	
-	public void setNumChannels(int numChannels){this.channelInput.setValue(numChannels);}
-
-	public Integer getNumChannels(){return (Integer) channelInput.getValue();}
 
 }

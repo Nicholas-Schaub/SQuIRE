@@ -1,8 +1,5 @@
 package nist.quantitativeabsorbance;
 
-import ij.IJ;
-import ij.ImagePlus;
-
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -10,6 +7,12 @@ import java.util.Calendar;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+import org.micromanager.api.ScriptInterface;
+import org.micromanager.utils.MMScriptException;
+
+import ij.IJ;
+import ij.ImagePlus;
+import mmcorej.BooleanVector;
 import mmcorej.CMMCore;
 import mmcorej.DeviceType;
 import mmcorej.DoubleVector;
@@ -17,10 +20,6 @@ import mmcorej.StrVector;
 import nist.ij.log.Log;
 import nist.quantitativeabsorbance.guipanels.BenchmarkingPanel;
 import nist.quantitativeabsorbance.guipanels.ControlPanel;
-
-import org.micromanager.api.PositionList;
-import org.micromanager.api.ScriptInterface;
-import org.micromanager.utils.MMScriptException;
 
 public class AppParams {
 	// Strings used in the plug-in
@@ -33,7 +32,6 @@ public class AppParams {
 	
 	// Microscope hardware configuration
 	private static boolean hasAutoShutter;
-	private static boolean usePreviousCalibration = false;
 	private static StrVector stateDevices;
 	private static StrVector shutterDevices;
 	
@@ -70,6 +68,7 @@ public class AppParams {
 	private static DoubleVector channelOffset;
 	private static String fluorescentShutter;
 	private static String transmittedShutter;
+	private static BooleanVector useAutofocus;
 	
 	// Benchmarking Thread settings
 	private static double fluctuation = 0.0001;
@@ -79,7 +78,6 @@ public class AppParams {
 	
 	// Methods to get device hardware.
 	public static boolean hasAutoShutter() {return hasAutoShutter;}
-	public static boolean usePreviousCalibration() {return usePreviousCalibration;}
 	public static StrVector getStateDevices() {return stateDevices;}
 	public static StrVector getDeviceStates(String stateDevice) throws Exception {
 		return core_.getAllowedPropertyValues(stateDevice,"Label");
@@ -91,6 +89,7 @@ public class AppParams {
 	public static StrVector getTransmittedDeviceSetting() {return transmittedDeviceSetting;}
 	public static StrVector getAbsorptionSetting() {return absorptionSetting;}
 	public static StrVector getChannelName() {return channelName;}
+	public static BooleanVector getAutofocus() {return useAutofocus;}
 	public static DoubleVector getChannelExposures() {return channelExposure;}
 	public static DoubleVector getChannelOffset() {return channelOffset;}
 	public static String getFluorescentShutter() {return fluorescentShutter;}
@@ -98,7 +97,6 @@ public class AppParams {
 	
 	// Methods to set device hardware.
 	public static void setCurrentSampleName(String sampleName) {currentSampleName = sampleName;}
-	public static void usePreviousCalibration(boolean usePrevious) {AppParams.usePreviousCalibration = usePrevious;}
 	public static void setChannelExposure(int index, double exp) {AppParams.channelExposure.set(index, exp);}
 	public static void setFluorescentDevice(StrVector fluorescentDevice) {AppParams.fluorescentDevice = fluorescentDevice;}
 	public static void setFluorescentDeviceSetting(StrVector fluorescentDeviceSetting) {AppParams.fluorescentDeviceSetting = fluorescentDeviceSetting;}
@@ -164,21 +162,8 @@ public class AppParams {
 
 		pullParamsFromGui(callSource);
 		
-		if (!usePreviousCalibration) {
-			AppParams.lightBlank = new ArrayList<ImageStats>();
-			AppParams.foreground = new ArrayList<ImagePlus>();
-			usePreviousCalibration = false;
-		} else if (AppParams.lightBlank==null || AppParams.foreground==null || AppParams.darkBlank==null) {
-			IJ.error("Could not find previous calibration settings, recapturing calibration images.");
-			AppParams.lightBlank = new ArrayList<ImageStats>();
-			AppParams.foreground = new ArrayList<ImagePlus>();
-			usePreviousCalibration = false;
-		} else if (AppParams.lightBlank.size()!=channels) {
-			IJ.error("The number of channels does not match the number of calibration sets. Will recapture calibration images.");
-			AppParams.lightBlank = new ArrayList<ImageStats>();
-			AppParams.foreground = new ArrayList<ImagePlus>();
-			usePreviousCalibration = false;
-		}
+		AppParams.lightBlank = new ArrayList<ImageStats>();
+		AppParams.foreground = new ArrayList<ImagePlus>();
 		
 		recordPreferences();
 		
@@ -192,7 +177,12 @@ public class AppParams {
 		if (callSource instanceof BenchmarkingPanel) {
 			thread = new Thread(new BenchmarkingThread());
 		} else if (callSource instanceof ControlPanel) {
-			thread = new Thread(new AutomatedCaptureThread());
+			if (AppParams.isAutomated) {
+				thread = new Thread(new AutomatedCaptureThread());
+			} else {
+				thread = new Thread(new ManualCaptureThread());
+			}
+			
 		}
 		
 		thread.start();
@@ -215,41 +205,43 @@ public class AppParams {
 		isAutomated = QuantitativeAbsorptionGUI.getControlPanel().isAutomated();
 		numReplicates = QuantitativeAbsorptionGUI.getControlPanel().getNumReplicates();
 		numSamples = QuantitativeAbsorptionGUI.getControlPanel().getNumSample();
-		channels = QuantitativeAbsorptionGUI.getControlPanel().getNumChannels();
 		fluorescentShutter = QuantitativeAbsorptionGUI.getControlPanel().getFluorescentShutter();
 		transmittedShutter = QuantitativeAbsorptionGUI.getControlPanel().getTransmittedShutter();
+		Object[][] automatedSettings = QuantitativeAbsorptionGUI.getControlPanel().getAutomatedSettings();
+		channels = automatedSettings.length;
+		System.out.println(channels);
+		fluorescentDevice = new StrVector();
+		fluorescentDeviceSetting = new StrVector();
+		transmittedDevice = new StrVector();
+		transmittedDeviceSetting = new StrVector();
+		absorptionSetting = new StrVector();
+		channelName = new StrVector();
+		channelExposure = new DoubleVector();
+		channelOffset = new DoubleVector();
+		useAutofocus = new BooleanVector();
+		for (int i=0; i<channels; i++) {
+			channelName.add((String) automatedSettings[i][0]);
+			absorptionSetting.add((String) automatedSettings[i][1]);
+			transmittedDevice.add(QuantitativeAbsorptionGUI.getControlPanel().getTransmittedDevice());
+			transmittedDeviceSetting.add((String) automatedSettings[i][2]);
+			fluorescentDevice.add(QuantitativeAbsorptionGUI.getControlPanel().getFluorescentDevice());
+			fluorescentDeviceSetting.add((String) automatedSettings[i][3]);
+			useAutofocus.add((Boolean) automatedSettings[i][6]);
+			if (automatedSettings[i][4].equals("")) {
+				channelExposure.add(1);
+			} else {
+				channelExposure.add(Double.parseDouble(automatedSettings[i][4].toString()));
+			}
+			if (automatedSettings[i][5].equals("")) {
+				channelOffset.add(0);
+			} else {
+				channelOffset.add(Double.parseDouble(automatedSettings[i][5].toString()));
+			}
+		}
 		
 		if (isAutomated) {
 			numSamples = app_.getPositionList().getNumberOfPositions();
-			Object[][] automatedSettings = QuantitativeAbsorptionGUI.getControlPanel().getAutomatedSettings();
-			channels = automatedSettings.length;
-			System.out.println(channels);
-			fluorescentDevice = new StrVector();
-			fluorescentDeviceSetting = new StrVector();
-			transmittedDevice = new StrVector();
-			transmittedDeviceSetting = new StrVector();
-			absorptionSetting = new StrVector();
-			channelName = new StrVector();
-			channelExposure = new DoubleVector();
-			channelOffset = new DoubleVector();
-			for (int i=0; i<channels; i++) {
-				channelName.add((String) automatedSettings[i][0]);
-				absorptionSetting.add((String) automatedSettings[i][1]);
-				transmittedDevice.add(QuantitativeAbsorptionGUI.getControlPanel().getTransmittedDevice());
-				transmittedDeviceSetting.add((String) automatedSettings[i][2]);
-				fluorescentDevice.add(QuantitativeAbsorptionGUI.getControlPanel().getFluorescentDevice());
-				fluorescentDeviceSetting.add((String) automatedSettings[i][3]);
-				if (automatedSettings[i][4].equals("")) {
-					channelExposure.add(1);
-				} else {
-					channelExposure.add(Double.parseDouble(automatedSettings[i][4].toString()));
-				}
-				if (automatedSettings[i][5].equals("")) {
-					channelOffset.add(0);
-				} else {
-					channelOffset.add(Double.parseDouble(automatedSettings[i][5].toString()));
-				}
-			}
+
 		}
 		
 		fluctuation = QuantitativeAbsorptionGUI.getBenchmarkingPanel().getFluctuation(); 
@@ -353,7 +345,6 @@ public class AppParams {
 		pref.putInt("numReplicates", numReplicates);
 		pref.put("coreSaveDir", coreSaveDir);
 		pref.putBoolean("isAutomated", isAutomated);
-		pref.putBoolean("usePreviousCalibration", usePreviousCalibration);
 
 		try
 		{
@@ -382,7 +373,6 @@ public class AppParams {
 		channels = pref.getInt("channels", channels);
 		numReplicates = pref.getInt("numReplicates", numReplicates);
 		isAutomated = pref.getBoolean("isAutomated", isAutomated);
-		usePreviousCalibration = pref.getBoolean("useAutoShutter", usePreviousCalibration);
 	}
 		
 	public static String getISOTimeString() {

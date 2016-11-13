@@ -511,6 +511,7 @@ public class ImageStats {
 
 		stdImage = new ImagePlus();
 		int frames = imp.getNFrames();
+		int replicates = imp.getNSlices();
 		meanImage = IJ.createImage("", width, height, frames, 32);
 		ImageStack meanStack = new ImageStack(width,height);
 		ImageStack stdStack = new ImageStack(width,height);
@@ -523,7 +524,7 @@ public class ImageStats {
 			double[] dpixelmean = new double[flen];
 			float[] fpixeldeviation = new float[flen];
 			double[] dpixeldeviation = new double[flen];
-			for (int j=1; j<=(numReplicates); j++) { //loop to calculate the mean
+			for (int j=1; j<=(replicates); j++) { //loop to calculate the mean
 				imp.setPosition(1,j,i);
 				tpixel = (float[]) imp.getProcessor().convertToFloat().getPixels();
 				for (int k=0; k<flen; k++) {
@@ -533,8 +534,8 @@ public class ImageStats {
 			}
 
 			for (int j = 0; j<flen; j++) {
-				dpixelmean[j] /= (double) numReplicates;
-				dpixeldeviation[j] /= (double) numReplicates;
+				dpixelmean[j] /= (double) replicates;
+				dpixeldeviation[j] /= (double) replicates;
 				dpixeldeviation[j] = Math.sqrt(dpixeldeviation[j] - dpixelmean[j]*dpixelmean[j]);
 				fpixelmean[j] = (float) dpixelmean[j];
 				fpixeldeviation[j] = (float) dpixeldeviation[j];
