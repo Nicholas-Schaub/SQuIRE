@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance;
+package nist.squire;
 
 import java.awt.BorderLayout;
 import java.awt.event.WindowAdapter;
@@ -7,9 +7,9 @@ import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 
-import nist.quantitativeabsorbance.guipanels.BenchmarkingPanel;
-import nist.quantitativeabsorbance.guipanels.ControlPanel;
-import nist.quantitativeabsorbance.guipanels.PlateConfigPanel;
+import nist.squire.guipanels.BenchmarkingPanel;
+import nist.squire.guipanels.ControlPanel;
+import nist.squire.guipanels.PlateConfigPanel;
 
 
 @SuppressWarnings("serial")

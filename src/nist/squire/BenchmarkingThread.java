@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance;
+package nist.squire;
 
 import java.awt.Color;
 import java.io.BufferedWriter;

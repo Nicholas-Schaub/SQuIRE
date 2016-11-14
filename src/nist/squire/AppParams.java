@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance;
+package nist.squire;
 
 import java.io.File;
 import java.sql.Timestamp;
@@ -18,8 +18,8 @@ import mmcorej.DeviceType;
 import mmcorej.DoubleVector;
 import mmcorej.StrVector;
 import nist.ij.log.Log;
-import nist.quantitativeabsorbance.guipanels.BenchmarkingPanel;
-import nist.quantitativeabsorbance.guipanels.ControlPanel;
+import nist.squire.guipanels.BenchmarkingPanel;
+import nist.squire.guipanels.ControlPanel;
 
 public class AppParams {
 	// Strings used in the plug-in

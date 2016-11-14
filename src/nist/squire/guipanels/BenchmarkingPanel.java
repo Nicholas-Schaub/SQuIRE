@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance.guipanels;
+package nist.squire.guipanels;
 
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -15,7 +15,7 @@ import org.micromanager.utils.MMScriptException;
 
 import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
-import nist.quantitativeabsorbance.AppParams;
+import nist.squire.AppParams;
 import nist.textfield.TextFieldInputPanel;
 import nist.textfield.validator.ValidatorDbl;
 

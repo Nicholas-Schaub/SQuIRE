@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance.guipanels;
+package nist.squire.guipanels;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -34,7 +34,7 @@ import com.swtdesigner.SwingResourceManager;
 import mmcorej.StrVector;
 import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
-import nist.quantitativeabsorbance.AppParams;
+import nist.squire.AppParams;
 import nist.textfield.TextFieldInputPanel;
 import nist.textfield.validator.ValidatorInt;
 import nist.textfield.validator.ValidatorPrefix;

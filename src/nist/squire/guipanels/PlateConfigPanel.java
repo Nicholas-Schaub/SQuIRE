@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance.guipanels;
+package nist.squire.guipanels;
 
 import java.awt.Color;
 import java.awt.GridBagConstraints;
@@ -19,7 +19,7 @@ import javax.swing.border.LineBorder;
 
 import mmcorej.CMMCore;
 import nist.ij.log.Log;
-import nist.quantitativeabsorbance.AppParams;
+import nist.squire.AppParams;
 import nist.textfield.TextFieldInputPanel;
 import nist.textfield.validator.ValidatorDbl;
 import nist.textfield.validator.ValidatorInt;

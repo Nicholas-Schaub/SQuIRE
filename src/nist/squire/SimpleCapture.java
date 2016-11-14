@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance;
+package nist.squire;
 
 import ij.IJ;
 import ij.ImagePlus;

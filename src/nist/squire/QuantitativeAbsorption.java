@@ -1,4 +1,4 @@
-package nist.quantitativeabsorbance;
+package nist.squire;
 
 import org.micromanager.api.MMPlugin;
 import org.micromanager.api.ScriptInterface;
