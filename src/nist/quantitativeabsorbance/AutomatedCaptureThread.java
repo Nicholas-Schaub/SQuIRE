@@ -173,12 +173,6 @@ public class AutomatedCaptureThread implements Runnable {
 						core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
 						core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
 						core_.waitForSystem();
-						while (!core_.getProperty(fluorescentDevice.get(j), "Label").equalsIgnoreCase(fluorescentDeviceSetting.get(j)) ||
-								!core_.getProperty(transmittedDevice.get(j), "Label").equalsIgnoreCase(transmittedDeviceSetting.get(j))){
-							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-							core_.waitForSystem();
-						}
 						
 						if (useAutofocus.get(j)){
 							System.out.print("Focusing...");
