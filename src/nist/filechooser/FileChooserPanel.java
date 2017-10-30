@@ -29,7 +29,8 @@ public class FileChooserPanel extends JPanel {
      input.setToolTipText(label);
      
      button.addActionListener(new ActionListener() {
-       public void actionPerformed(ActionEvent arg0) {
+       @Override
+	public void actionPerformed(ActionEvent arg0) {
          JFileChooser chooser = new JFileChooser(input.getText());
          chooser.setFileSelectionMode(2);
          

@@ -50,6 +50,7 @@ public class SaveThread implements Runnable {
 					ImageStats imstats = new ImageStats(imp);
 					IJ.saveAsTiff(imstats.getFrameMean(), saveDir+imp.getTitle()+"-Mean");
 					IJ.saveAsTiff(imstats.getFrameDeviation(), saveDir+imp.getTitle()+"-STD");
+					imstats = null;
 				} else {
 					IJ.saveAsTiff(imp, saveDir+imp.getTitle());
 				}

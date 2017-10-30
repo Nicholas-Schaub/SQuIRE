@@ -70,6 +70,7 @@ public class ValidatedTextField<T> extends JTextField {
 			this.validator = validator;
 		}
 
+		@Override
 		public void insertString(DocumentFilter.FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
 			if (!ignoreErrors) {
 				Document doc = fb.getDocument();
@@ -89,6 +90,7 @@ public class ValidatedTextField<T> extends JTextField {
 			}
 		}
 
+		@Override
 		public void replace(DocumentFilter.FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
 			if (!ignoreErrors) {
 				Document doc = fb.getDocument();
@@ -107,6 +109,7 @@ public class ValidatedTextField<T> extends JTextField {
 			}
 		}
 
+		@Override
 		public void remove(DocumentFilter.FilterBypass fb, int offset, int length) throws BadLocationException {
 			if (!ignoreErrors) {
 				Document doc = fb.getDocument();

@@ -16,7 +16,7 @@ public class AddNistLogo extends JPanel{
 		
 		//ImageIcon ii = new ImageIcon(this.getClass().getResource("nistlogo.jpg"));
 		BufferedImage image = new BufferedImage(width,height,BufferedImage.TYPE_INT_RGB);
-		Graphics2D g2d = (Graphics2D) image.createGraphics();
+		Graphics2D g2d = image.createGraphics();
 		g2d.addRenderingHints(new RenderingHints(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY));
 		//g2d.drawImage(ii.getImage(), 0, 0, width, height, null);
 		

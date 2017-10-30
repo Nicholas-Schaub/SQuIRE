@@ -69,6 +69,7 @@ public class AppParams {
 	private static String fluorescentShutter;
 	private static String transmittedShutter;
 	private static BooleanVector useAutofocus;
+	private static boolean isAbsorbance = true;
 	
 	// Benchmarking Thread settings
 	private static double fluctuation = 0.0001;
@@ -125,6 +126,7 @@ public class AppParams {
 	public static ImageStats getLightBlank(int index) {return AppParams.lightBlank.get(index);}
 	public static ImagePlus getForeground(int index) {return AppParams.foreground.get(index);}
 	public static boolean getIsAutomated() {return isAutomated;}
+	public static boolean getIsAbsorbance() {return isAbsorbance;};
 	public static String getCurrentSampleName() {return currentSampleName;}
 	
 	// Methods to set benchmarking thread settings
@@ -203,6 +205,7 @@ public class AppParams {
 		saveBenchmarkingExcel = QuantitativeAbsorptionGUI.getBenchmarkingPanel().isSaveBenchmarkingExcel();
 		saveBenchmarkingTxt = QuantitativeAbsorptionGUI.getBenchmarkingPanel().isSaveBenchmarkingTxt();
 		isAutomated = QuantitativeAbsorptionGUI.getControlPanel().isAutomated();
+		isAbsorbance = QuantitativeAbsorptionGUI.getControlPanel().isAbsorbance();
 		numReplicates = QuantitativeAbsorptionGUI.getControlPanel().getNumReplicates();
 		numSamples = QuantitativeAbsorptionGUI.getControlPanel().getNumSample();
 		fluorescentShutter = QuantitativeAbsorptionGUI.getControlPanel().getFluorescentShutter();

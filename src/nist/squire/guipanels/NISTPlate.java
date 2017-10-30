@@ -29,7 +29,6 @@ public class NISTPlate extends SBSPlate {
 	private double wellSizeX_;
 	private double wellSizeY_;
 	private boolean circular_ = true;
-	private SBSPlate superPlate;
 
 	private String id_;
 	private String description_;
@@ -56,8 +55,6 @@ public class NISTPlate extends SBSPlate {
 	private static final String DESCRIPTION = "description";
 	private static final String FIRST_WELL_X = "first_well_x";
 	private static final String FIRST_WELL_Y = "first_well_y";
-
-	private static final String METADATA_SITE_PREFIX = "Site";
 
 	private static final char rowAlphabet[] = { 'A','B','C','D','E',
 		'F','G','H','I','J',

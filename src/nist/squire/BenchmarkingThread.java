@@ -21,6 +21,7 @@ import ij.process.ColorProcessor;
 public class BenchmarkingThread implements Runnable {
 	ResultsTable benchmarkingResults = new ResultsTable();
 
+	@Override
 	public void run() {
 		AppParams params = AppParams.getInstance();
 		ImageStats currentSample;

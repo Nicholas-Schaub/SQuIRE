@@ -6,7 +6,7 @@ import org.micromanager.api.ScriptInterface;
 public class QuantitativeAbsorption implements MMPlugin {
 	   
 	   // Variables for naming the plugin
-	   public static String menuName = "Quantitative Absorption";
+	   public static String menuName = "SQuIRE";
 	   public static String tooltipDescription =
 	      "Measures absorption in an RPE sample";
 	

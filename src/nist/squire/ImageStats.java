@@ -109,7 +109,7 @@ public class ImageStats {
 		/* 
 		 *  This function calculates the number of images required to make sure that the average pixel
 		 *  instensity value will be within 2 pixels of the actual pixel intensity. This calculation is
-		 *  based on the equation for estimating the number of samples requied for a 95% confidence
+		 *  based on the equation for estimating the number of samples required for a 95% confidence
 		 *  interval.
 		 *  
 		 *  n = (Z*sigma/E)^2 
@@ -193,7 +193,7 @@ public class ImageStats {
 		 *  on the input intensity value provided.
 		 */
 		double ln = Math.log(10);
-		double dIntensity = (double) intensity;
+		double dIntensity = intensity;
 		double dBestInt;
 		double dSTD;
 		if (nFrames==1) {
@@ -487,9 +487,9 @@ public class ImageStats {
 		float[] fMeanPixels = (float[]) imp.getPixels();
 		
 		for (int i = 0; i<fMeanPixels.length; i++) {
-			fMean += (double) fMeanPixels[i];
+			fMean += fMeanPixels[i];
 		}
-		fMean /= (double) fMeanPixels.length;
+		fMean /= fMeanPixels.length;
 		
 		return (float) fMean;
 	}
@@ -501,7 +501,7 @@ public class ImageStats {
 		for (int i = 0; i<fDeviationPixels.length; i++) {
 			fDeviation += (double) fDeviationPixels[i]*fDeviationPixels[i];
 		}
-		fDeviation /= (double) fDeviationPixels.length;
+		fDeviation /= fDeviationPixels.length;
 		fDeviation = Math.sqrt(Math.abs(fDeviation));
 		
 		return (float) fDeviation;
@@ -534,8 +534,8 @@ public class ImageStats {
 			}
 
 			for (int j = 0; j<flen; j++) {
-				dpixelmean[j] /= (double) replicates;
-				dpixeldeviation[j] /= (double) replicates;
+				dpixelmean[j] /= replicates;
+				dpixeldeviation[j] /= replicates;
 				dpixeldeviation[j] = Math.sqrt(dpixeldeviation[j] - dpixelmean[j]*dpixelmean[j]);
 				fpixelmean[j] = (float) dpixelmean[j];
 				fpixeldeviation[j] = (float) dpixeldeviation[j];
@@ -572,7 +572,8 @@ public class ImageStats {
 		if (stdImage!=null && stdImage.getNFrames()==nFrames) {
 			return stdImage;
 		}
-		return getFrameDeviationAndMean(rawImage);
+		getFrameDeviationAndMean(rawImage);
+		return stdImage;
 	}
 
 	public ImagePlus getFrameMean() {

@@ -23,6 +23,7 @@ implements Validator<Double>
 		errorText = ("<html>Please only enter numbers in the text field.<br>Must be greater than or equal to " + min + " and less than or equal to " + max + "</html>");
 	}
 
+	@Override
 	public boolean validate(String val)
 	{
 		try
@@ -37,11 +38,13 @@ implements Validator<Double>
 		return false;
 	}
 
+	@Override
 	public String getErrorText()
 	{
 		return errorText;
 	}
 
+	@Override
 	public Double getValue(String val)
 	{
 		if (val.equals(""))

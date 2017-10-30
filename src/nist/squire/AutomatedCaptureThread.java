@@ -8,6 +8,8 @@ import org.micromanager.api.ScriptInterface;
 import org.micromanager.utils.AutofocusManager;
 import org.micromanager.utils.MMScriptException;
 
+import com.esotericsoftware.minlog.Log;
+
 import ij.IJ;
 import ij.ImagePlus;
 import mmcorej.BooleanVector;
@@ -32,9 +34,10 @@ public class AutomatedCaptureThread implements Runnable {
 	private DoubleVector channelOffset;
 	private BooleanVector useAutofocus;
 	private int numChannels;
-	private int numReplicates = AppParams.getNumReplicates();
+	private int numReplicates;
 	
-    public void run() {
+    @Override
+	public void run() {
 		AppParams params = AppParams.getInstance();
 		SimpleCapture cap = new SimpleCapture(false);
 		
@@ -48,6 +51,7 @@ public class AutomatedCaptureThread implements Runnable {
 		channelOffset = AppParams.getChannelOffset();
 		numChannels = AppParams.getChannels();
 		useAutofocus = AppParams.getAutofocus();
+		numReplicates = AppParams.getNumReplicates();
 		
 		int start = 0;
 		
@@ -119,11 +123,17 @@ public class AutomatedCaptureThread implements Runnable {
 							//IJ.saveAsTiff(AppParams.getDarkBlank().rawImage, AppParams.getCalibrationImageDir(j)+AppParams.getDarkBlank().rawImage.getTitle());
 							Thread backThread = new Thread(new SaveThread(AppParams.getDarkBlank().rawImage,j,true));
 							backThread.start();
-							ImagePlus foregroundRaw = cap.seriesCapture(channelName.get(j)+" - Light Background", lightStats.bestExposure(), lightStats.numBlankSamples(lightStats.bestExposure()));
+							ImagePlus foregroundRaw;
+							if (AppParams.getIsAbsorbance()) {
+								foregroundRaw = cap.seriesCapture(channelName.get(j)+" - Light Background", lightStats.bestExposure(), lightStats.numBlankSamples(lightStats.bestExposure()));
+							} else {
+								foregroundRaw = cap.seriesCapture(channelName.get(j)+" - Light Background", lightStats.bestExposure(), numReplicates);
+							}
 							ImageStats foreground = new ImageStats(foregroundRaw);
 							AppParams.addForeground(foreground.getFrameMean());
+							foreground.rawImage = null;
 							AppParams.setChannelExposure(j, lightStats.bestExposure());
-							Thread forThread = new Thread(new SaveThread(foreground.rawImage,j,true));
+							Thread forThread = new Thread(new SaveThread(foregroundRaw,j,true));
 							forThread.start();
 							//IJ.saveAsTiff(foreground.rawImage, AppParams.getCalibrationImageDir(j)+foreground.rawImage.getTitle());
 						}
@@ -170,14 +180,21 @@ public class AutomatedCaptureThread implements Runnable {
 							}
 						}
 						
-						core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-						core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-						core_.waitForSystem();
+						int numTries = 0;
 						while (!core_.getProperty(fluorescentDevice.get(j), "Label").equalsIgnoreCase(fluorescentDeviceSetting.get(j)) ||
 								!core_.getProperty(transmittedDevice.get(j), "Label").equalsIgnoreCase(transmittedDeviceSetting.get(j))){
-							core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-							core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-							core_.waitForSystem();
+							try {
+								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
+								core_.waitForSystem();
+							} catch (Exception e) {
+								IJ.log("Exception: " + e.getMessage());
+								IJ.log("Retrying...");
+								if (numTries++>5) {
+									System.exit(1);
+								}
+							}
+
 						}
 						
 						if (useAutofocus.get(j)){
@@ -193,7 +210,11 @@ public class AutomatedCaptureThread implements Runnable {
 						core_.waitForSystem();
 						if (absorptionSetting.get(j).equals("Absorbance")){
 							startTime = System.currentTimeMillis();
-							currentSample = cap.threshCaptureSeries(sampleLabel, channelExposure.get(j), numReplicates, AppParams.getLightBlank(currentAbsorb).minConfPix(numReplicates));
+							if (AppParams.getIsAbsorbance()) {
+								currentSample = cap.threshCaptureSeries(sampleLabel, channelExposure.get(j), numReplicates, AppParams.getLightBlank(currentAbsorb).minConfPix(numReplicates));
+							} else {
+								currentSample = cap.seriesCapture(sampleLabel,channelExposure.get(j),numReplicates);
+							}
 							//currentSample = cap.powerCaptureSeries(sampleLabel, (int) channelExposure.get(j), (int) (channelExposure.get(j)*Math.pow(2,5)), numReplicates);
 							long captureTime = System.currentTimeMillis(); 
 							System.out.print("Capture time: " + Long.toString(captureTime-startTime) + "\n");

@@ -29,6 +29,7 @@ public class ManualCaptureThread implements Runnable {
 	private int numChannels;
 	private int numReplicates = AppParams.getNumReplicates();
 	
+	@Override
 	public void run() {
 		AppParams params = AppParams.getInstance();
 		SimpleCapture cap = new SimpleCapture(false);

@@ -40,6 +40,7 @@ public class DirectoryChooserPanel extends JPanel {
 		input.setToolTipText(label);
 		button.addActionListener(new ActionListener() {
     
+			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				JFileChooser chooser = new JFileChooser(input.getText());
 				chooser.setFileSelectionMode(1);
@@ -60,6 +61,7 @@ public class DirectoryChooserPanel extends JPanel {
 		hasError();
 	}
     
+	@Override
 	public void setEnabled(boolean val) {
 		label.setEnabled(val);
 		input.setEnabled(val);

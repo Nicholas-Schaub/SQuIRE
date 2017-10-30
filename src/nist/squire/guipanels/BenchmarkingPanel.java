@@ -13,7 +13,6 @@ import javax.swing.JPanel;
 
 import org.micromanager.utils.MMScriptException;
 
-import nist.filechooser.DirectoryChooserPanel;
 import nist.ij.log.Log;
 import nist.squire.AppParams;
 import nist.textfield.TextFieldInputPanel;
@@ -114,6 +113,7 @@ implements ActionListener
 		showGraph.addActionListener(this);
 	}
 
+	@Override
 	public void actionPerformed(ActionEvent e)
 	{
 		if (e.getSource() == startBenchmarkButton) {

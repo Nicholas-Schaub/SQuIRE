@@ -21,6 +21,7 @@ public class Log
 
 		private final String text;
 		private static HashMap<String, LogType> logMap;
+		@Override
 		public String toString()
 		{
 			return text;
@@ -46,7 +47,7 @@ public class Log
 		}
 
 		public static LogType getLogType(String name) {
-			return (LogType)logMap.get(name);
+			return logMap.get(name);
 		}
 	}
 

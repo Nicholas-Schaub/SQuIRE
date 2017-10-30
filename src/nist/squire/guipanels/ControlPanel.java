@@ -23,6 +23,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JToggleButton;
+import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
@@ -51,6 +52,9 @@ implements ActionListener
 	private JToggleButton useManual;
 	private JToggleButton useAutomated;
 	private ButtonGroup manualAutoGroup;
+	private JToggleButton useAbsorbance;
+	private JToggleButton useTransmittance;
+	private ButtonGroup useAbsorbanceGroup;
 	
 	// General Capture Settings
 	private JPanel generalSettingsPanel;
@@ -105,6 +109,11 @@ implements ActionListener
 				useManual.setFocusPainted(false);
 				useAutomated = new JToggleButton("Use Automated Settings");
 				useAutomated.setFocusPainted(false);
+			useAbsorbanceGroup = new ButtonGroup();
+				useAbsorbance = new JToggleButton("Capture Absorbance");
+				useAbsorbance.setFocusPainted(false);
+				useTransmittance = new JToggleButton("Capture Transmittance");
+				useTransmittance.setFocusPainted(false);
 			
 		// General Settings Panel
 		generalSettingsPanel = new JPanel(new GridBagLayout());
@@ -167,6 +176,7 @@ implements ActionListener
 			dtm = new DefaultTableModel();
 			dtm.setColumnIdentifiers(columnNames);
 			channelSettings = new JTable(dtm) {
+				@Override
 				public TableCellEditor getCellEditor(int row, int column) {
 					int modelColumn = convertColumnIndexToModel(column);
 					
@@ -190,7 +200,7 @@ implements ActionListener
 					}
 	            }
 			};
-			((DefaultTableCellRenderer)channelSettings.getTableHeader().getDefaultRenderer()).setHorizontalAlignment(JLabel.CENTER);
+			((DefaultTableCellRenderer)channelSettings.getTableHeader().getDefaultRenderer()).setHorizontalAlignment(SwingConstants.CENTER);
 			addChannel();
 			dtm.setValueAt("Absorbance", 0, 0);
 			dtm.setValueAt("Absorbance", 0, 1);
@@ -231,6 +241,15 @@ implements ActionListener
 		c.gridx++;
 		manualAutoGroup.add(useAutomated);
 		startStopPanel.add(useAutomated,c);
+		c.gridy++;
+		c.anchor = GridBagConstraints.LINE_END;
+		useAbsorbanceGroup.add(useAbsorbance);
+		startStopPanel.add(useAbsorbance, c);
+		useAbsorbance.setSelected(true);
+		c.gridx++;
+		c.anchor = GridBagConstraints.LINE_START;
+		useAbsorbanceGroup.add(useTransmittance);
+		startStopPanel.add(useTransmittance, c);
 		c.gridx = 0;
 		c.gridy = 0;
 		c.ipadx = 0;
@@ -376,6 +395,7 @@ implements ActionListener
 		});
 		
 		useManual.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (useManual.isSelected()) {
 				}
@@ -383,6 +403,7 @@ implements ActionListener
 		});
 		
 		useAutomated.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (useAutomated.isSelected()) {
 				}
@@ -390,6 +411,7 @@ implements ActionListener
 		});
 		
 		addChannelButton.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
 					addChannel();
@@ -401,6 +423,7 @@ implements ActionListener
 		});
 		
 		removeChannelButton.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (channelSettings.getRowCount()>1) {
 					removeChannel();
@@ -409,6 +432,7 @@ implements ActionListener
 		});
 	}
 
+	@Override
 	public void actionPerformed(ActionEvent e)
 	{
 		if (e.getSource() == startButton) {
@@ -503,6 +527,8 @@ implements ActionListener
 
 	public boolean isAutomated() {return useAutomated.isSelected();}
 	
+	public boolean isAbsorbance() {return useAbsorbance.isSelected();}
+	
 	public String getCoreSaveDirectory() {return outputDirectory.getValue();}
 	
 	public void setCoreSaveDirectory(String coreSaveDir) {outputDirectory.setValue(coreSaveDir);}
@@ -513,10 +539,10 @@ implements ActionListener
 	
 	public void setNumSample(int numSample){this.numSampleInput.setValue(numSample);}
 
-	public Integer getNumSample(){return (Integer) numSampleInput.getValue();}
+	public Integer getNumSample(){return numSampleInput.getValue();}
 	
 	public void setNumReplicates(int numReplicates){this.numReplicatesInput.setValue(numReplicates);}
 
-	public Integer getNumReplicates(){return (Integer) numReplicatesInput.getValue();}
+	public Integer getNumReplicates(){return numReplicatesInput.getValue();}
 
 }

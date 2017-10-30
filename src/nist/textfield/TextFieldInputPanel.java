@@ -60,7 +60,7 @@ public class TextFieldInputPanel<T> extends JPanel {
     public void setLabelText(String text) {this.label.setText(text); }
 
     public T getValue() {
-    	return (T)validator.getValue(input.getText());
+    	return validator.getValue(input.getText());
 	}
       
     public void enableIgnoreErrors() {
@@ -71,7 +71,8 @@ public class TextFieldInputPanel<T> extends JPanel {
     	input.disableIgnoreErrors();
     }
         
-    public void setEnabled(boolean enabled) {
+    @Override
+	public void setEnabled(boolean enabled) {
     	super.setEnabled(enabled);
           
     	label.setEnabled(enabled);

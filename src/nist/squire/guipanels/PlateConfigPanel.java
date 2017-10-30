@@ -17,13 +17,6 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.border.LineBorder;
 
-import mmcorej.CMMCore;
-import nist.ij.log.Log;
-import nist.squire.AppParams;
-import nist.textfield.TextFieldInputPanel;
-import nist.textfield.validator.ValidatorDbl;
-import nist.textfield.validator.ValidatorInt;
-
 import org.micromanager.api.MultiStagePosition;
 import org.micromanager.api.PositionList;
 import org.micromanager.api.ScriptInterface;
@@ -39,6 +32,12 @@ import org.micromanager.utils.TextUtils;
 import com.swtdesigner.SwingResourceManager;
 
 import ij.IJ;
+import mmcorej.CMMCore;
+import nist.ij.log.Log;
+import nist.squire.AppParams;
+import nist.textfield.TextFieldInputPanel;
+import nist.textfield.validator.ValidatorDbl;
+import nist.textfield.validator.ValidatorInt;
 
 public class PlateConfigPanel 
 extends JPanel
@@ -223,6 +222,7 @@ implements ActionListener, ParentPlateGUI
 		plateIDCombo_.addItem(NISTPlate.NIST_SLIDE_HOLDER);
 		plateIDCombo_.addItem(NISTPlate.NIST_SINGLE_SLIDE);
 		plateIDCombo_.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(final ActionEvent e) {
 				
 				plate_.initializePlate((String) plateIDCombo_.getSelectedItem());
@@ -254,6 +254,7 @@ implements ActionListener, ParentPlateGUI
 
 		rdbtnDifferentXYSpacing_ = new JRadioButton("Set XY Spacing");
 		rdbtnDifferentXYSpacing_.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (rdbtnDifferentXYSpacing_.isSelected()) {
 					spacingLabel.setText("Spacing X,Y (um)");
@@ -265,6 +266,7 @@ implements ActionListener, ParentPlateGUI
 
 		rdbtnFieldOfViewSpacing_ = new JRadioButton("Image Overlap");
 		rdbtnFieldOfViewSpacing_.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (rdbtnFieldOfViewSpacing_.isSelected()) {
 					spacingLabel.setText("Overlap (um)");
@@ -281,6 +283,7 @@ implements ActionListener, ParentPlateGUI
 		refreshButton = new JButton();
 		refreshButton.setIcon(SwingResourceManager.getIcon(PlateConfigPanel.class, "/arrow_refresh.png"));
 		refreshButton.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(final ActionEvent e) {
 				regenerate();
 			}
@@ -290,6 +293,7 @@ implements ActionListener, ParentPlateGUI
 		calibrateXyButton = new JButton();
 		calibrateXyButton.setIcon(SwingResourceManager.getIcon(PlateConfigPanel.class, "/cog.png"));
 		calibrateXyButton.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(final ActionEvent e) {
 				calibrateXY();
 			}
@@ -299,6 +303,7 @@ implements ActionListener, ParentPlateGUI
 		setPositionListButton = new JButton();
 		setPositionListButton.setIcon(SwingResourceManager.getIcon(PlateConfigPanel.class, "/table.png"));
 		setPositionListButton.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(final ActionEvent e) {
 				setPositionList();
 			}
@@ -307,6 +312,7 @@ implements ActionListener, ParentPlateGUI
 		
 		rdbtnSelectWells_ = new JRadioButton("Select Wells");
 		rdbtnSelectWells_.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				if (rdbtnSelectWells_.isSelected()) {
 					platePanel_.setTool(PlatePanel.Tool.SELECT);
@@ -320,6 +326,7 @@ implements ActionListener, ParentPlateGUI
 
 		rdbtnMoveStage_ = new JRadioButton("Move Stage");
 		rdbtnMoveStage_.addActionListener(new ActionListener() {
+			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (rdbtnMoveStage_.isSelected()) {
 					platePanel_.setTool(PlatePanel.Tool.MOVE);
@@ -476,6 +483,7 @@ implements ActionListener, ParentPlateGUI
 		}
 	}
 
+	@Override
 	public void actionPerformed(ActionEvent paramActionEvent) {
 		// TODO Auto-generated method stub
 		

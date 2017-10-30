@@ -1,11 +1,10 @@
 package nist.squire;
 
+import java.util.ArrayList;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.NewImage;
-
-import java.util.ArrayList;
-
 import mmcorej.CMMCore;
 
 public class SimpleCapture {
@@ -34,12 +33,12 @@ public class SimpleCapture {
 		if (start<1) {
 			pStart = -1;
 		} else {
-			pStart = 31-Integer.numberOfLeadingZeros((int) start);
+			pStart = 31-Integer.numberOfLeadingZeros(start);
 		}
-		int pEnd = 31-Integer.numberOfLeadingZeros((int) end);
+		int pEnd = 31-Integer.numberOfLeadingZeros(end);
 		int numExposures = pEnd-pStart+1;
 		int currentFrame = 0;
-		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, (int) numExposures, bitDepth); 
+		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, numExposures, bitDepth); 
 		for (int i = pStart; i <= pEnd; i++) {
 			currentFrame++;
 			double exposure = Math.pow(2,i);
@@ -84,7 +83,7 @@ public class SimpleCapture {
 	public ImagePlus seriesCapture(String imgName, double exposure, int replicates) {
 		
 		ImagePlus imageSeries = IJ.createHyperStack(imgName, width, height, 1, replicates, 1, bitDepth);
-		double dExposure = (double) exposure;
+		double dExposure = exposure;
 		
 		try {
 			if (isLive) {
