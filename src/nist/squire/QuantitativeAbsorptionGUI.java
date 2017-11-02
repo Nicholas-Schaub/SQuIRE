@@ -9,6 +9,7 @@ import javax.swing.JTabbedPane;
 
 import nist.squire.guipanels.BenchmarkingPanel;
 import nist.squire.guipanels.ControlPanel;
+import nist.squire.guipanels.NotificationsPanel;
 import nist.squire.guipanels.PlateConfigPanel;
 
 
@@ -18,6 +19,7 @@ public class QuantitativeAbsorptionGUI extends JFrame {
 	private static ControlPanel controlPanel;
 	private static BenchmarkingPanel benchmarkingPanel;
 	private static PlateConfigPanel plateConfigPanel;
+	private static NotificationsPanel notificationsPanel;
 	
 	public QuantitativeAbsorptionGUI() throws Exception {
 		super(AppParams.getAPP_TITLE());
@@ -56,6 +58,9 @@ public class QuantitativeAbsorptionGUI extends JFrame {
 		plateConfigPanel = new PlateConfigPanel();
 		tabbedPane.add("Plate Scan",plateConfigPanel);
 		
+		notificationsPanel = new NotificationsPanel();
+		tabbedPane.add("Notifications",notificationsPanel);
+		
 		//tabbedPane.setSize(new Dimension(577,577));
 
 		setLayout(new BorderLayout());
@@ -68,6 +73,10 @@ public class QuantitativeAbsorptionGUI extends JFrame {
 	
 	public static BenchmarkingPanel getBenchmarkingPanel() {
 		return benchmarkingPanel;
+	}
+	
+	public static NotificationsPanel getNotificationsPanel() {
+		return notificationsPanel;
 	}
 	
 	public void performExit()

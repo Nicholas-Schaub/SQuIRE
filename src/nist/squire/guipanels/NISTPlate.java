@@ -180,15 +180,15 @@ public class NISTPlate extends SBSPlate {
 			circular_ = false;
 		} else if (id.equals(NIST_SLIDE_HOLDER)) {
 			id_ = NIST_SLIDE_HOLDER;
-			numColumns_ = 4;
+			numColumns_ = 3;
 			numRows_ = 1;
-			sizeXUm_ = 127760.0;
-			sizeYUm_ = 85480.0;
-			wellSpacingX_ = 27600.0;
+			sizeXUm_ = 159000.0;
+			sizeYUm_ = 109000.0;
+			wellSpacingX_ = 28000.0;
 			wellSpacingY_ = 80000.0;
-			firstWellX_ = 20000.0;
-			firstWellY_ = 50000.0;
-			wellSizeX_ = 25600.0;
+			firstWellX_ = 54000.0;
+			firstWellY_ = 54500.0;
+			wellSizeX_ = 26000.0;
 			wellSizeY_ = 75000.0;
 			circular_ = false;
 		}

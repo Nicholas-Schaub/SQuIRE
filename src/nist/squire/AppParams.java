@@ -10,6 +10,11 @@ import java.util.prefs.Preferences;
 import org.micromanager.api.ScriptInterface;
 import org.micromanager.utils.MMScriptException;
 
+import com.twilio.Twilio;
+import com.twilio.rest.api.v2010.account.Message;
+import com.twilio.rest.api.v2010.account.MessageCreator;
+import com.twilio.type.PhoneNumber;
+
 import ij.IJ;
 import ij.ImagePlus;
 import mmcorej.BooleanVector;
@@ -70,6 +75,10 @@ public class AppParams {
 	private static String transmittedShutter;
 	private static BooleanVector useAutofocus;
 	private static boolean isAbsorbance = true;
+	private static String twilio_sid = "";
+	private static String twilio_token = "";
+	private static String twilio_phone = "";
+	private static String receiver_phone = "";
 	
 	// Benchmarking Thread settings
 	private static double fluctuation = 0.0001;
@@ -211,6 +220,10 @@ public class AppParams {
 		fluorescentShutter = QuantitativeAbsorptionGUI.getControlPanel().getFluorescentShutter();
 		transmittedShutter = QuantitativeAbsorptionGUI.getControlPanel().getTransmittedShutter();
 		Object[][] automatedSettings = QuantitativeAbsorptionGUI.getControlPanel().getAutomatedSettings();
+		twilio_sid = QuantitativeAbsorptionGUI.getNotificationsPanel().getSID();
+		twilio_token = QuantitativeAbsorptionGUI.getNotificationsPanel().getToken();
+		twilio_phone = QuantitativeAbsorptionGUI.getNotificationsPanel().getTwilPhone();
+		receiver_phone = QuantitativeAbsorptionGUI.getNotificationsPanel().getRecPhone();
 		channels = automatedSettings.length;
 		System.out.println(channels);
 		fluorescentDevice = new StrVector();
@@ -348,6 +361,9 @@ public class AppParams {
 		pref.putInt("numReplicates", numReplicates);
 		pref.put("coreSaveDir", coreSaveDir);
 		pref.putBoolean("isAutomated", isAutomated);
+		pref.put("twilio_sid", twilio_sid);
+		pref.put("twilio_token", twilio_token);
+		pref.put("twilio_phone", twilio_phone);
 
 		try
 		{
@@ -376,6 +392,9 @@ public class AppParams {
 		channels = pref.getInt("channels", channels);
 		numReplicates = pref.getInt("numReplicates", numReplicates);
 		isAutomated = pref.getBoolean("isAutomated", isAutomated);
+		twilio_sid = pref.get("twilio_sid", twilio_sid);
+		twilio_token = pref.get("twilio_token", twilio_token);
+		twilio_phone = pref.get("twilio_phone", twilio_phone);
 	}
 		
 	public static String getISOTimeString() {
@@ -391,4 +410,21 @@ public class AppParams {
 		timeStr = timeStr.substring(0, idx);
 		return timeStr;
 	}
+	
+	public static void sendText(String msg) {
+		Twilio.init(twilio_sid, twilio_token);
+		
+		Message.creator(new PhoneNumber(receiver_phone),
+										 new PhoneNumber(twilio_phone),
+										 msg).create();
+	}
+	
+	public static String getSID() {return twilio_sid;}
+	public static String getToken() {return twilio_token;}
+	public static String getTwilioPhone() {return twilio_phone;}
+	public static String getReceiverPhone() {return twilio_phone;}
+	public static void setSID(String sid) {twilio_sid = sid;}
+	public static void setToken(String token) {twilio_token = token;}
+	public static void setTwilioPhone(String phone) {twilio_phone = phone;}
+	public static void setReceiverPhone(String phone) {receiver_phone = phone;}
 }

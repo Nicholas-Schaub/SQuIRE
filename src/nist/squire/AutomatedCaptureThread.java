@@ -140,8 +140,12 @@ public class AutomatedCaptureThread implements Runnable {
 					}
 
 				} else if (i>1) {
-					core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
-					core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
+					if (fluorescentDevice.size()!=1) {
+						for (int j = 0; j<numChannels; j++) {
+							core_.setProperty(fluorescentDevice.get(0), "Label", fluorescentDeviceSetting.get(0));
+							core_.setProperty(transmittedDevice.get(0), "Label", transmittedDeviceSetting.get(0));
+						}
+					}
 					
 					sampleLabel = platePl.getPosition(i-2).getLabel();
 					long startTime = System.currentTimeMillis();
@@ -180,22 +184,25 @@ public class AutomatedCaptureThread implements Runnable {
 							}
 						}
 						
-						int numTries = 0;
-						while (!core_.getProperty(fluorescentDevice.get(j), "Label").equalsIgnoreCase(fluorescentDeviceSetting.get(j)) ||
-								!core_.getProperty(transmittedDevice.get(j), "Label").equalsIgnoreCase(transmittedDeviceSetting.get(j))){
-							try {
-								core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
-								core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
-								core_.waitForSystem();
-							} catch (Exception e) {
-								IJ.log("Exception: " + e.getMessage());
-								IJ.log("Retrying...");
-								if (numTries++>5) {
-									System.exit(1);
+						if (fluorescentDevice.size()!=1) {
+							int numTries = 0;
+							while (!core_.getProperty(fluorescentDevice.get(j), "Label").equalsIgnoreCase(fluorescentDeviceSetting.get(j)) ||
+									!core_.getProperty(transmittedDevice.get(j), "Label").equalsIgnoreCase(transmittedDeviceSetting.get(j))){
+								try {
+									core_.setProperty(fluorescentDevice.get(j), "Label", fluorescentDeviceSetting.get(j));
+									core_.setProperty(transmittedDevice.get(j), "Label", transmittedDeviceSetting.get(j));
+									core_.waitForSystem();
+								} catch (Exception e) {
+									IJ.log("Exception: " + e.getMessage());
+									IJ.log("Retrying...");
+									if (numTries++>5) {
+										System.exit(1);
+									}
 								}
-							}
 
+							}
 						}
+
 						
 						if (useAutofocus.get(j)){
 							System.out.print("Focusing...");
@@ -244,10 +251,12 @@ public class AutomatedCaptureThread implements Runnable {
 			}
 			
 			core_.setShutterOpen(false);
+			AppParams.sendText("Completed imaging!");
 			
 		} catch (InterruptedException ex) {
 		} catch (MMScriptException e) {
 			// TODO Auto-generated catch block
+			AppParams.sendText("Something went wrong.");
 			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -257,8 +266,10 @@ public class AutomatedCaptureThread implements Runnable {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
+			AppParams.sendText("Something went wrong.");
 			e.printStackTrace();
 		}
+		
 	}
 
 }

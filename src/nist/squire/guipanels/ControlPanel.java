@@ -241,6 +241,7 @@ implements ActionListener
 		c.gridx++;
 		manualAutoGroup.add(useAutomated);
 		startStopPanel.add(useAutomated,c);
+		c.gridx = 0;
 		c.gridy++;
 		c.anchor = GridBagConstraints.LINE_END;
 		useAbsorbanceGroup.add(useAbsorbance);
