@@ -113,11 +113,9 @@ public class ImageStats {
 		 *  interval.
 		 *  
 		 *  n = (Z*sigma/E)^2 
-		 *  Z - Z-statistic for a condifence interval (~2 for 95% confidence)
-		 *  E - Error bounds of the confidence interval
+		 *  Z - Z-statistic for confidence interval (1.96)
+		 *  E - Error bounds of the confidence interval (2^-11)
 		 *  sigma - Standard deviation of pixel intensity
-		 *  
-		 *  For the sake of simplicity, Z = 2 and E = 2 pixels, so that n = sigma^2.
 		 */
 		if (nFrames==1) {
 			return 0;
@@ -139,14 +137,14 @@ public class ImageStats {
 		
 		double deviation = standardDev[0] + standardDev[1]*Math.sqrt(intensity);
 		
-		return (int) (deviation*deviation);
+		return (int) (1.96*deviation*deviation / (((double) bitdepth)*Math.pow(2., -11.)));
 	}
 	
 	public double bestExposure() {
 		/* 
 		 *  This method estimates the best possible exposure value. The best possible exposure value
 		 *  is the time in milliseconds where the average pixel intensity value of all pixels in an
-		 *  image are at least 2 standard deviations below the saturation point of the camera.
+		 *  image are at least 3 standard deviations below the saturation point of the camera.
 		 */
 		if (bestExp!=0.0) {
 			return bestExp;

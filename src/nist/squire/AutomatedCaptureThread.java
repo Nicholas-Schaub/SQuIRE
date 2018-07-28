@@ -71,9 +71,11 @@ public class AutomatedCaptureThread implements Runnable {
 					if (AppParams.hasAutoShutter()) {
 						core_.setShutterDevice(AppParams.getTransmittedShutter());
 						core_.setShutterOpen(false);
+						core_.waitForDevice(AppParams.getTransmittedShutter());
 					}
 					if (!platePl.getPosition(0).getLabel().endsWith("BLANKWELL")) {
 						core_.setShutterOpen(true);
+						core_.waitForDevice(AppParams.getTransmittedShutter());
 						app_.enableLiveMode(true);
 						JOptionPane.showMessageDialog(null,
 							"Please move your sample to a clean, empty space.",
@@ -81,9 +83,11 @@ public class AutomatedCaptureThread implements Runnable {
 							JOptionPane.PLAIN_MESSAGE);
 						app_.enableLiveMode(false);
 						core_.setShutterOpen(false);
+						core_.waitForDevice(AppParams.getTransmittedShutter());
 					} else {
 						MultiStagePosition.goToPosition(platePl.getPosition(i), core_);
 					}
+					Thread.sleep(5000);
 					sampleLabel = "Dark Background";
 					AppParams.setCurrentSampleName(sampleLabel);
 					currentSample = cap.powerCaptureSeries(sampleLabel, 0,(int) Math.pow(2, 8), numReplicates);
@@ -93,6 +97,8 @@ public class AutomatedCaptureThread implements Runnable {
 					if (AppParams.hasAutoShutter()) {
 						core_.setShutterDevice(AppParams.getTransmittedShutter());
 						core_.setShutterOpen(true);
+						core_.waitForDevice(AppParams.getTransmittedShutter());
+						Thread.sleep(5000);
 					}
 					
 					for (int j = 0; j<numChannels; j++) {

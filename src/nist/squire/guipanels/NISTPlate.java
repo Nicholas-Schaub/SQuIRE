@@ -42,6 +42,7 @@ public class NISTPlate extends SBSPlate {
 	public static final String NIST_96_WELL= "96 Well";
 	public static final String NIST_384_WELL= "384 Well";
 	public static final String NIST_SLIDE_HOLDER ="Slides";
+	public static final String NIST_COVERSLIP_SLIDES ="Coverslip Slides";
 	public static final String NIST_SINGLE_SLIDE = "Single Slide";
 	public static final String NIST_CUSTOM = "Custom";
 
@@ -191,6 +192,19 @@ public class NISTPlate extends SBSPlate {
 			wellSizeX_ = 26000.0;
 			wellSizeY_ = 75000.0;
 			circular_ = false;
+		} else if (id.equals(NIST_COVERSLIP_SLIDES)) {
+			id_ = NIST_COVERSLIP_SLIDES;
+			numColumns_ = 4;
+			numRows_ = 3;
+			sizeXUm_ = 159000.0;
+			sizeYUm_ = 109000.0;
+			wellSpacingX_ = 27000.0;
+			wellSpacingY_ = 15000.0;
+			firstWellX_ = 54000.0;
+			firstWellY_ = 46000.0;
+			wellSizeX_ = 12000.0;
+			wellSizeY_ = 12000.0;
+			circular_ = true;
 		}
 
 		super.setWellSpacingY(wellSpacingY_);

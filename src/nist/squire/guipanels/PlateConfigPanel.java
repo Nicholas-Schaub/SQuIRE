@@ -221,6 +221,7 @@ implements ActionListener, ParentPlateGUI
 		plateIDCombo_.addItem(NISTPlate.NIST_384_WELL);
 		plateIDCombo_.addItem(NISTPlate.NIST_SLIDE_HOLDER);
 		plateIDCombo_.addItem(NISTPlate.NIST_SINGLE_SLIDE);
+		plateIDCombo_.addItem(NISTPlate.NIST_COVERSLIP_SLIDES);
 		plateIDCombo_.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(final ActionEvent e) {
