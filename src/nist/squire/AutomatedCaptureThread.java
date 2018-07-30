@@ -257,12 +257,10 @@ public class AutomatedCaptureThread implements Runnable {
 			}
 			
 			core_.setShutterOpen(false);
-			AppParams.sendText("Completed imaging!");
 			
 		} catch (InterruptedException ex) {
 		} catch (MMScriptException e) {
 			// TODO Auto-generated catch block
-			AppParams.sendText("Something went wrong.");
 			e.printStackTrace();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
@@ -272,7 +270,6 @@ public class AutomatedCaptureThread implements Runnable {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
-			AppParams.sendText("Something went wrong.");
 			e.printStackTrace();
 		}
 		

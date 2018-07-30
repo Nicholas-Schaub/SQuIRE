@@ -137,7 +137,7 @@ public class ImageStats {
 		
 		double deviation = standardDev[0] + standardDev[1]*Math.sqrt(intensity);
 		
-		return (int) (1.96*deviation*deviation / (((double) bitdepth)*Math.pow(2., -11.)));
+		return (int) Math.pow(1.96*deviation / (Math.pow(2., bitdepth-11.)), 2);
 	}
 	
 	public double bestExposure() {
@@ -391,8 +391,8 @@ public class ImageStats {
 		//	the fastest possible rate by the camera.
 		IJ.log("getPixelExposureStats");
 		SimpleCapture cap = new SimpleCapture(false);
-		float oldDeviation = 0;
-		float newDeviation = 0;
+		double oldDeviation = 0;
+		double newDeviation = 0;
 
 		// Images to temporarily hold captured or processed images.
 		ImagePlus imstackTemp = IJ.createHyperStack("", width, height, 1, numReplicates, 40, imagebitdepth);
@@ -480,19 +480,19 @@ public class ImageStats {
 		return deviationPlot;
 	}
 
-	private float getMeanImageMean(ImageProcessor imp) {
+	private double getMeanImageMean(ImageProcessor imp) {
 		double fMean = 0;
 		float[] fMeanPixels = (float[]) imp.getPixels();
 		
 		for (int i = 0; i<fMeanPixels.length; i++) {
-			fMean += fMeanPixels[i];
+			fMean += (double) fMeanPixels[i];
 		}
 		fMean /= fMeanPixels.length;
 		
-		return (float) fMean;
+		return fMean;
 	}
 	
-	private float getDeviationImageMean(ImageProcessor imp) {
+	private double getDeviationImageMean(ImageProcessor imp) {
 		double fDeviation = 0;
 		float[] fDeviationPixels = (float[]) imp.getPixels();
 		
@@ -502,7 +502,7 @@ public class ImageStats {
 		fDeviation /= fDeviationPixels.length;
 		fDeviation = Math.sqrt(Math.abs(fDeviation));
 		
-		return (float) fDeviation;
+		return fDeviation;
 	}
 	
 	private ImagePlus getFrameDeviationAndMean(ImagePlus imp) {
@@ -633,6 +633,8 @@ public class ImageStats {
 			CurveFitter cf = new CurveFitter(dSqrtPixels,dStdPixels);
 			cf.doFit(0);
 			standardDev = cf.getParams();
+			IJ.log("Standard Deviation Slope: " + standardDev[1]);
+			IJ.log("Standard Deviation Intercept: " + standardDev[0]);
 			rSqr = cf.getRSquared();
 		}
 

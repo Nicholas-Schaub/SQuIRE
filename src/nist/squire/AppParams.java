@@ -10,11 +10,6 @@ import java.util.prefs.Preferences;
 import org.micromanager.api.ScriptInterface;
 import org.micromanager.utils.MMScriptException;
 
-import com.twilio.Twilio;
-import com.twilio.rest.api.v2010.account.Message;
-import com.twilio.rest.api.v2010.account.MessageCreator;
-import com.twilio.type.PhoneNumber;
-
 import ij.IJ;
 import ij.ImagePlus;
 import mmcorej.BooleanVector;
@@ -220,10 +215,6 @@ public class AppParams {
 		fluorescentShutter = QuantitativeAbsorptionGUI.getControlPanel().getFluorescentShutter();
 		transmittedShutter = QuantitativeAbsorptionGUI.getControlPanel().getTransmittedShutter();
 		Object[][] automatedSettings = QuantitativeAbsorptionGUI.getControlPanel().getAutomatedSettings();
-		twilio_sid = QuantitativeAbsorptionGUI.getNotificationsPanel().getSID();
-		twilio_token = QuantitativeAbsorptionGUI.getNotificationsPanel().getToken();
-		twilio_phone = QuantitativeAbsorptionGUI.getNotificationsPanel().getTwilPhone();
-		receiver_phone = QuantitativeAbsorptionGUI.getNotificationsPanel().getRecPhone();
 		channels = automatedSettings.length;
 		System.out.println(channels);
 		fluorescentDevice = new StrVector();
@@ -409,14 +400,6 @@ public class AppParams {
 		int idx = timeStr.indexOf('.');
 		timeStr = timeStr.substring(0, idx);
 		return timeStr;
-	}
-	
-	public static void sendText(String msg) {
-		Twilio.init(twilio_sid, twilio_token);
-		
-		Message.creator(new PhoneNumber(receiver_phone),
-										 new PhoneNumber(twilio_phone),
-										 msg).create();
 	}
 	
 	public static String getSID() {return twilio_sid;}
